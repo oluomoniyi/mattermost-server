@@ -34,47 +34,53 @@ var searchPostStoreTests = []searchTest{
 }
 
 func TestSearchPostStore(t *testing.T, s store.Store, testEngine *SearchTestEngine) {
-	runTestSearch(t, s, testEngine, searchPostStoreTests)
+	th := &SearchTestHelper{
+		Store: s,
+	}
+	err := th.InitFixtures()
+	defer th.CleanFixtures()
+	require.Nil(t, err)
+	runTestSearch(t, testEngine, searchPostStoreTests, th)
 }
 
-func testSearchDatabasePostSearch(t *testing.T, s store.Store) {
+func testSearchDatabasePostSearch(t *testing.T, th *SearchTestHelper) {
 	teamId := model.NewId()
 	userId := model.NewId()
 
 	u1 := &model.User{}
 	u1.Username = "usera1"
-	u1.Email = makeEmail()
-	u1, err := s.User().Save(u1)
+	u1.Email = th.makeEmail()
+	u1, err := th.Store.User().Save(u1)
 	require.Nil(t, err)
 
 	t1 := &model.TeamMember{}
 	t1.TeamId = teamId
 	t1.UserId = u1.Id
-	_, err = s.Team().SaveMember(t1, 1000)
+	_, err = th.Store.Team().SaveMember(t1, 1000)
 	require.Nil(t, err)
 
 	u2 := &model.User{}
 	u2.Username = "userb2"
-	u2.Email = makeEmail()
-	u2, err = s.User().Save(u2)
+	u2.Email = th.makeEmail()
+	u2, err = th.Store.User().Save(u2)
 	require.Nil(t, err)
 
 	t2 := &model.TeamMember{}
 	t2.TeamId = teamId
 	t2.UserId = u2.Id
-	_, err = s.Team().SaveMember(t2, 1000)
+	_, err = th.Store.Team().SaveMember(t2, 1000)
 	require.Nil(t, err)
 
 	u3 := &model.User{}
 	u3.Username = "userc3"
-	u3.Email = makeEmail()
-	u3, err = s.User().Save(u3)
+	u3.Email = th.makeEmail()
+	u3, err = th.Store.User().Save(u3)
 	require.Nil(t, err)
 
 	t3 := &model.TeamMember{}
 	t3.TeamId = teamId
 	t3.UserId = u3.Id
-	_, err = s.Team().SaveMember(t3, 1000)
+	_, err = th.Store.Team().SaveMember(t3, 1000)
 	require.Nil(t, err)
 
 	c1 := &model.Channel{}
@@ -82,13 +88,13 @@ func testSearchDatabasePostSearch(t *testing.T, s store.Store) {
 	c1.DisplayName = "Channel1"
 	c1.Name = "channel-x"
 	c1.Type = model.CHANNEL_OPEN
-	c1, _ = s.Channel().Save(c1, -1)
+	c1, _ = th.Store.Channel().Save(c1, -1)
 
 	m1 := model.ChannelMember{}
 	m1.ChannelId = c1.Id
 	m1.UserId = userId
 	m1.NotifyProps = model.GetDefaultChannelNotifyProps()
-	_, err = s.Channel().SaveMember(&m1)
+	_, err = th.Store.Channel().SaveMember(&m1)
 	require.Nil(t, err)
 
 	c2 := &model.Channel{}
@@ -96,29 +102,29 @@ func testSearchDatabasePostSearch(t *testing.T, s store.Store) {
 	c2.DisplayName = "Channel2"
 	c2.Name = "channel-y"
 	c2.Type = model.CHANNEL_OPEN
-	c2, _ = s.Channel().Save(c2, -1)
+	c2, _ = th.Store.Channel().Save(c2, -1)
 
 	c3 := &model.Channel{}
 	c3.TeamId = teamId
 	c3.DisplayName = "Channel3"
 	c3.Name = "channel-z"
 	c3.Type = model.CHANNEL_OPEN
-	c3, _ = s.Channel().Save(c3, -1)
+	c3, _ = th.Store.Channel().Save(c3, -1)
 
-	s.Channel().Delete(c3.Id, model.GetMillis())
+	th.Store.Channel().Delete(c3.Id, model.GetMillis())
 
 	m3 := model.ChannelMember{}
 	m3.ChannelId = c3.Id
 	m3.UserId = userId
 	m3.NotifyProps = model.GetDefaultChannelNotifyProps()
-	_, err = s.Channel().SaveMember(&m3)
+	_, err = th.Store.Channel().SaveMember(&m3)
 	require.Nil(t, err)
 
 	o1 := &model.Post{}
 	o1.ChannelId = c1.Id
 	o1.UserId = u1.Id
 	o1.Message = "corey mattermost new york United States"
-	o1, err = s.Post().Save(o1)
+	o1, err = th.Store.Post().Save(o1)
 	require.Nil(t, err)
 
 	o1a := &model.Post{}
@@ -126,21 +132,21 @@ func testSearchDatabasePostSearch(t *testing.T, s store.Store) {
 	o1a.UserId = model.NewId()
 	o1a.Message = "corey mattermost new york United States"
 	o1a.Type = model.POST_JOIN_CHANNEL
-	_, err = s.Post().Save(o1a)
+	_, err = th.Store.Post().Save(o1a)
 	require.Nil(t, err)
 
 	o2 := &model.Post{}
 	o2.ChannelId = c1.Id
 	o2.UserId = u2.Id
 	o2.Message = "New Jersey United States is where John is from"
-	o2, err = s.Post().Save(o2)
+	o2, err = th.Store.Post().Save(o2)
 	require.Nil(t, err)
 
 	o3 := &model.Post{}
 	o3.ChannelId = c2.Id
 	o3.UserId = model.NewId()
 	o3.Message = "New Jersey United States is where John is from corey new york"
-	_, err = s.Post().Save(o3)
+	_, err = th.Store.Post().Save(o3)
 	require.Nil(t, err)
 
 	o4 := &model.Post{}
@@ -148,35 +154,35 @@ func testSearchDatabasePostSearch(t *testing.T, s store.Store) {
 	o4.UserId = model.NewId()
 	o4.Hashtags = "#hashtag #tagme"
 	o4.Message = "(message)blargh"
-	o4, err = s.Post().Save(o4)
+	o4, err = th.Store.Post().Save(o4)
 	require.Nil(t, err)
 
 	o5 := &model.Post{}
 	o5.ChannelId = c1.Id
 	o5.UserId = model.NewId()
 	o5.Hashtags = "#secret #howdy #tagme"
-	o5, err = s.Post().Save(o5)
+	o5, err = th.Store.Post().Save(o5)
 	require.Nil(t, err)
 
 	o6 := &model.Post{}
 	o6.ChannelId = c3.Id
 	o6.UserId = model.NewId()
 	o6.Hashtags = "#hashtag"
-	o6, err = s.Post().Save(o6)
+	o6, err = th.Store.Post().Save(o6)
 	require.Nil(t, err)
 
 	o7 := &model.Post{}
 	o7.ChannelId = c3.Id
 	o7.UserId = u3.Id
 	o7.Message = "New Jersey United States is where John is from corey new york"
-	o7, err = s.Post().Save(o7)
+	o7, err = th.Store.Post().Save(o7)
 	require.Nil(t, err)
 
 	o8 := &model.Post{}
 	o8.ChannelId = c3.Id
 	o8.UserId = model.NewId()
 	o8.Message = "Deleted"
-	o8, err = s.Post().Save(o8)
+	o8, err = th.Store.Post().Save(o8)
 	require.Nil(t, err)
 
 	tt := []struct {
@@ -368,7 +374,7 @@ func testSearchDatabasePostSearch(t *testing.T, s store.Store) {
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := s.Post().Search(teamId, userId, tc.searchParams)
+			result, err := th.Store.Post().Search(teamId, userId, tc.searchParams)
 			require.Nil(t, err)
 			require.Len(t, result.Order, tc.expectedResultsCount)
 			for _, expectedMessageResultId := range tc.expectedMessageResultIds {
@@ -378,19 +384,20 @@ func testSearchDatabasePostSearch(t *testing.T, s store.Store) {
 	}
 }
 
-func testSearchESSearchPosts_MarkdownUnderscores(t *testing.T, s store.Store) {
-	team, err := s.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+func testSearchESSearchPosts_MarkdownUnderscores(t *testing.T, th *SearchTestHelper) {
+	team, apperr := th.Store.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+	require.Nil(t, apperr)
+	defer func() { require.Nil(t, th.Store.Team().PermanentDelete(team.Id)) }()
+	channel, apperr := th.Store.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
+	require.Nil(t, apperr)
+	user, err := th.createUser("testuser", "testuser", "Test", "User")
 	require.Nil(t, err)
-	defer func() { require.Nil(t, s.Team().PermanentDelete(team.Id)) }()
-	channel, err := s.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
-	require.Nil(t, err)
-	user, err := s.User().Save(createUser("testuser", "testuser", "Test", "User"))
-	require.Nil(t, err)
-	require.Nil(t, addUserToTeamsAndChannels(s, user, []string{team.Id}, []string{channel.Id}))
-	defer func() { require.Nil(t, s.User().PermanentDelete(user.Id)) }()
+	require.Nil(t, th.addUserToTeams(user, []string{team.Id}))
+	require.Nil(t, th.addUserToChannels(user, []string{channel.Id}))
+	defer func() { require.Nil(t, th.Store.User().PermanentDelete(user.Id)) }()
 
 	// Test searching for posts with Markdown underscores in them.
-	post, err := s.Post().Save(createPost(user.Id, channel.Id, "_start middle end_ _both_"))
+	post, err := th.createPost(user.Id, channel.Id, "_start middle end_ _both_", "", 0)
 	require.Nil(t, err)
 
 	searchParams := []*model.SearchParams{
@@ -426,7 +433,7 @@ func testSearchESSearchPosts_MarkdownUnderscores(t *testing.T, s store.Store) {
 		t.Run(tc.Name, func(t *testing.T) {
 			searchParams[0].Terms = tc.Terms
 
-			res, err := s.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
+			res, err := th.Store.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
 			require.Nil(t, err)
 
 			ids := []string{}
@@ -434,29 +441,30 @@ func testSearchESSearchPosts_MarkdownUnderscores(t *testing.T, s store.Store) {
 				ids = append(ids, id)
 			}
 
-			checkPostInSearchResults(t, post.Id, ids)
-			checkMatchesEqual(t, map[string][]string{
+			th.checkPostInSearchResults(t, post.Id, ids)
+			th.checkMatchesEqual(t, map[string][]string{
 				post.Id: {tc.Terms},
 			}, res.Matches)
 		})
 	}
 }
 
-func testSearchESSearchPosts_EmailAddresses(t *testing.T, s store.Store) {
-	team, err := s.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+func testSearchESSearchPosts_EmailAddresses(t *testing.T, th *SearchTestHelper) {
+	team, apperr := th.Store.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+	require.Nil(t, apperr)
+	defer func() { require.Nil(t, th.Store.Team().PermanentDelete(team.Id)) }()
+	channel, apperr := th.Store.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
+	require.Nil(t, apperr)
+	user, err := th.createUser("testuser", "testuser", "Test", "User")
 	require.Nil(t, err)
-	defer func() { require.Nil(t, s.Team().PermanentDelete(team.Id)) }()
-	channel, err := s.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
-	require.Nil(t, err)
-	user, err := s.User().Save(createUser("testuser", "testuser", "Test", "User"))
-	require.Nil(t, err)
-	require.Nil(t, addUserToTeamsAndChannels(s, user, []string{team.Id}, []string{channel.Id}))
-	defer func() { require.Nil(t, s.User().PermanentDelete(user.Id)) }()
+	require.Nil(t, th.addUserToTeams(user, []string{team.Id}))
+	require.Nil(t, th.addUserToChannels(user, []string{channel.Id}))
+	defer func() { require.Nil(t, th.Store.User().PermanentDelete(user.Id)) }()
 
 	// Test searching for posts with Markdown underscores in them.
-	post1, err := s.Post().Save(createPost(user.Id, channel.Id, "something test something example.com something"))
+	post1, err := th.createPost(user.Id, channel.Id, "something test something example.com something", "", 0)
 	require.Nil(t, err)
-	post2, err := s.Post().Save(createPost(user.Id, channel.Id, "test@example.com"))
+	post2, err := th.createPost(user.Id, channel.Id, "test@example.com", "", 0)
 	require.Nil(t, err)
 
 	searchParams := []*model.SearchParams{
@@ -467,7 +475,7 @@ func testSearchESSearchPosts_EmailAddresses(t *testing.T, s store.Store) {
 		},
 	}
 
-	res, err := s.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
+	res, err := th.Store.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
 	require.Nil(t, err)
 
 	ids := []string{}
@@ -475,27 +483,28 @@ func testSearchESSearchPosts_EmailAddresses(t *testing.T, s store.Store) {
 		ids = append(ids, id)
 	}
 
-	checkPostNotInSearchResults(t, post1.Id, ids)
-	checkPostInSearchResults(t, post2.Id, ids)
-	checkMatchesEqual(t, map[string][]string{
+	th.checkPostNotInSearchResults(t, post1.Id, ids)
+	th.checkPostInSearchResults(t, post2.Id, ids)
+	th.checkMatchesEqual(t, map[string][]string{
 		post2.Id: {"test", "example.com"},
 	}, res.Matches)
 }
 
-func testSearchESSearchPosts_ChineseWords(t *testing.T, s store.Store) {
-	team, err := s.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
-	require.Nil(t, err)
-	defer func() { require.Nil(t, s.Team().PermanentDelete(team.Id)) }()
-	channel, err := s.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
-	require.Nil(t, err)
-	user, err := s.User().Save(createUser("testuser", "testuser", "Test", "User"))
-	require.Nil(t, err)
-	require.Nil(t, addUserToTeamsAndChannels(s, user, []string{team.Id}, []string{channel.Id}))
-	defer func() { require.Nil(t, s.User().PermanentDelete(user.Id)) }()
+func testSearchESSearchPosts_ChineseWords(t *testing.T, th *SearchTestHelper) {
+	team, apperr := th.Store.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+	require.Nil(t, apperr)
+	defer func() { require.Nil(t, th.Store.Team().PermanentDelete(team.Id)) }()
+	channel, apperr := th.Store.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
+	require.Nil(t, apperr)
+	user, err := th.createUser("testuser", "testuser", "Test", "User")
+	require.Nil(t, apperr)
+	require.Nil(t, th.addUserToTeams(user, []string{team.Id}))
+	require.Nil(t, th.addUserToChannels(user, []string{channel.Id}))
+	defer func() { require.Nil(t, th.Store.User().PermanentDelete(user.Id)) }()
 
-	post1, err := s.Post().Save(createPost(user.Id, channel.Id, "你好"))
+	post1, err := th.createPost(user.Id, channel.Id, "你好", "", 0)
 	require.Nil(t, err)
-	post2, err := s.Post().Save(createPost(user.Id, channel.Id, "你"))
+	post2, err := th.createPost(user.Id, channel.Id, "你", "", 0)
 	require.Nil(t, err)
 
 	searchParams := []*model.SearchParams{
@@ -538,7 +547,7 @@ func testSearchESSearchPosts_ChineseWords(t *testing.T, s store.Store) {
 		t.Run(tc.Name, func(t *testing.T) {
 			searchParams[0].Terms = tc.Terms
 
-			res, err := s.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
+			res, err := th.Store.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
 			require.Nil(t, err)
 
 			expectedIds := []string{}
@@ -552,25 +561,26 @@ func testSearchESSearchPosts_ChineseWords(t *testing.T, s store.Store) {
 			}
 
 			require.ElementsMatch(t, expectedIds, ids)
-			checkMatchesEqual(t, tc.Matches, res.Matches)
+			th.checkMatchesEqual(t, tc.Matches, res.Matches)
 		})
 	}
 }
 
-func testSearchESSearchPosts_AlternativeSpellings(t *testing.T, s store.Store) {
-	team, err := s.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+func testSearchESSearchPosts_AlternativeSpellings(t *testing.T, th *SearchTestHelper) {
+	team, apperr := th.Store.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+	require.Nil(t, apperr)
+	defer func() { require.Nil(t, th.Store.Team().PermanentDelete(team.Id)) }()
+	channel, apperr := th.Store.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
+	require.Nil(t, apperr)
+	user, err := th.createUser("testuser", "testuser", "Test", "User")
 	require.Nil(t, err)
-	defer func() { require.Nil(t, s.Team().PermanentDelete(team.Id)) }()
-	channel, err := s.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
-	require.Nil(t, err)
-	user, err := s.User().Save(createUser("testuser", "testuser", "Test", "User"))
-	require.Nil(t, err)
-	require.Nil(t, addUserToTeamsAndChannels(s, user, []string{team.Id}, []string{channel.Id}))
-	defer func() { require.Nil(t, s.User().PermanentDelete(user.Id)) }()
+	require.Nil(t, th.addUserToTeams(user, []string{team.Id}))
+	require.Nil(t, th.addUserToChannels(user, []string{channel.Id}))
+	defer func() { require.Nil(t, th.Store.User().PermanentDelete(user.Id)) }()
 
-	post1, err := s.Post().Save(createPost(user.Id, channel.Id, "Straße"))
+	post1, err := th.createPost(user.Id, channel.Id, "Straße", "", 0)
 	require.Nil(t, err)
-	post2, err := s.Post().Save(createPost(user.Id, channel.Id, "Strasse"))
+	post2, err := th.createPost(user.Id, channel.Id, "Strasse", "", 0)
 	require.Nil(t, err)
 
 	searchParams := []*model.SearchParams{
@@ -607,7 +617,7 @@ func testSearchESSearchPosts_AlternativeSpellings(t *testing.T, s store.Store) {
 		t.Run(tc.Name, func(t *testing.T) {
 			searchParams[0].Terms = tc.Terms
 
-			res, err := s.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
+			res, err := th.Store.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
 			require.Nil(t, err)
 
 			expectedIds := []string{}
@@ -621,27 +631,28 @@ func testSearchESSearchPosts_AlternativeSpellings(t *testing.T, s store.Store) {
 			}
 
 			require.ElementsMatch(t, expectedIds, ids)
-			checkMatchesEqual(t, tc.Matches, res.Matches)
+			th.checkMatchesEqual(t, tc.Matches, res.Matches)
 		})
 	}
 }
 
-func testSearchESSearchPosts_AndOrTerms(t *testing.T, s store.Store) {
-	team, err := s.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+func testSearchESSearchPosts_AndOrTerms(t *testing.T, th *SearchTestHelper) {
+	team, apperr := th.Store.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+	require.Nil(t, apperr)
+	defer func() { require.Nil(t, th.Store.Team().PermanentDelete(team.Id)) }()
+	channel, apperr := th.Store.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
+	require.Nil(t, apperr)
+	user, err := th.createUser("testuser", "testuser", "Test", "User")
 	require.Nil(t, err)
-	defer func() { require.Nil(t, s.Team().PermanentDelete(team.Id)) }()
-	channel, err := s.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
-	require.Nil(t, err)
-	user, err := s.User().Save(createUser("testuser", "testuser", "Test", "User"))
-	require.Nil(t, err)
-	require.Nil(t, addUserToTeamsAndChannels(s, user, []string{team.Id}, []string{channel.Id}))
-	defer func() { require.Nil(t, s.User().PermanentDelete(user.Id)) }()
+	require.Nil(t, th.addUserToTeams(user, []string{team.Id}))
+	require.Nil(t, th.addUserToChannels(user, []string{channel.Id}))
+	defer func() { require.Nil(t, th.Store.User().PermanentDelete(user.Id)) }()
 
-	post1, err := s.Post().Save(createPost(user.Id, channel.Id, "things and stuff"))
+	post1, err := th.createPost(user.Id, channel.Id, "things and stuff", "", 0)
 	require.Nil(t, err)
-	post2, err := s.Post().Save(createPost(user.Id, channel.Id, "things"))
+	post2, err := th.createPost(user.Id, channel.Id, "things", "", 0)
 	require.Nil(t, err)
-	post3, err := s.Post().Save(createPost(user.Id, channel.Id, "stuff"))
+	post3, err := th.createPost(user.Id, channel.Id, "stuff", "", 0)
 	require.Nil(t, err)
 
 	t.Run("Searches for things stuff", func(t *testing.T) {
@@ -653,7 +664,7 @@ func testSearchESSearchPosts_AndOrTerms(t *testing.T, s store.Store) {
 			},
 		}
 
-		res, err := s.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
+		res, err := th.Store.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
 		require.Nil(t, err)
 		require.Len(t, res.Posts, 1)
 
@@ -662,10 +673,10 @@ func testSearchESSearchPosts_AndOrTerms(t *testing.T, s store.Store) {
 			ids = append(ids, id)
 		}
 
-		checkPostInSearchResults(t, post1.Id, ids)
-		checkPostNotInSearchResults(t, post2.Id, ids)
-		checkPostNotInSearchResults(t, post3.Id, ids)
-		checkMatchesEqual(t, map[string][]string{
+		th.checkPostInSearchResults(t, post1.Id, ids)
+		th.checkPostNotInSearchResults(t, post2.Id, ids)
+		th.checkPostNotInSearchResults(t, post3.Id, ids)
+		th.checkMatchesEqual(t, map[string][]string{
 			post1.Id: {"things", "stuff"},
 		}, res.Matches)
 	})
@@ -679,7 +690,7 @@ func testSearchESSearchPosts_AndOrTerms(t *testing.T, s store.Store) {
 			},
 		}
 
-		res, err := s.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
+		res, err := th.Store.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
 		require.Nil(t, err)
 		require.Len(t, res.Posts, 2)
 
@@ -688,10 +699,10 @@ func testSearchESSearchPosts_AndOrTerms(t *testing.T, s store.Store) {
 			ids = append(ids, id)
 		}
 
-		checkPostInSearchResults(t, post1.Id, ids)
-		checkPostInSearchResults(t, post2.Id, ids)
-		checkPostNotInSearchResults(t, post3.Id, ids)
-		checkMatchesEqual(t, map[string][]string{
+		th.checkPostInSearchResults(t, post1.Id, ids)
+		th.checkPostInSearchResults(t, post2.Id, ids)
+		th.checkPostNotInSearchResults(t, post3.Id, ids)
+		th.checkMatchesEqual(t, map[string][]string{
 			post1.Id: {"things"},
 			post2.Id: {"things"},
 		}, res.Matches)
@@ -706,7 +717,7 @@ func testSearchESSearchPosts_AndOrTerms(t *testing.T, s store.Store) {
 			},
 		}
 
-		res, err := s.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
+		res, err := th.Store.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
 		require.Nil(t, err)
 		require.Len(t, res.Posts, 2)
 
@@ -715,10 +726,10 @@ func testSearchESSearchPosts_AndOrTerms(t *testing.T, s store.Store) {
 			ids = append(ids, id)
 		}
 
-		checkPostInSearchResults(t, post1.Id, ids)
-		checkPostNotInSearchResults(t, post2.Id, ids)
-		checkPostInSearchResults(t, post3.Id, ids)
-		checkMatchesEqual(t, map[string][]string{
+		th.checkPostInSearchResults(t, post1.Id, ids)
+		th.checkPostNotInSearchResults(t, post2.Id, ids)
+		th.checkPostInSearchResults(t, post3.Id, ids)
+		th.checkMatchesEqual(t, map[string][]string{
 			post1.Id: {"stuff"},
 			post3.Id: {"stuff"},
 		}, res.Matches)
@@ -734,7 +745,7 @@ func testSearchESSearchPosts_AndOrTerms(t *testing.T, s store.Store) {
 			},
 		}
 
-		res, err := s.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
+		res, err := th.Store.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
 		require.Nil(t, err)
 		require.Len(t, res.Posts, 1)
 
@@ -743,8 +754,8 @@ func testSearchESSearchPosts_AndOrTerms(t *testing.T, s store.Store) {
 			ids = append(ids, id)
 		}
 
-		checkPostInSearchResults(t, post2.Id, ids)
-		checkMatchesEqual(t, map[string][]string{
+		th.checkPostInSearchResults(t, post2.Id, ids)
+		th.checkMatchesEqual(t, map[string][]string{
 			post2.Id: {"things"},
 		}, res.Matches)
 	})
@@ -758,7 +769,7 @@ func testSearchESSearchPosts_AndOrTerms(t *testing.T, s store.Store) {
 			},
 		}
 
-		res, err := s.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
+		res, err := th.Store.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
 		require.Nil(t, err)
 		require.Len(t, res.Posts, 1)
 
@@ -767,8 +778,8 @@ func testSearchESSearchPosts_AndOrTerms(t *testing.T, s store.Store) {
 			ids = append(ids, id)
 		}
 
-		checkPostInSearchResults(t, post3.Id, ids)
-		checkMatchesEqual(t, map[string][]string{
+		th.checkPostInSearchResults(t, post3.Id, ids)
+		th.checkMatchesEqual(t, map[string][]string{
 			post3.Id: {},
 		}, res.Matches)
 	})
@@ -782,7 +793,7 @@ func testSearchESSearchPosts_AndOrTerms(t *testing.T, s store.Store) {
 			},
 		}
 
-		res, err := s.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
+		res, err := th.Store.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
 		require.Nil(t, err)
 		require.Len(t, res.Posts, 3)
 
@@ -791,10 +802,10 @@ func testSearchESSearchPosts_AndOrTerms(t *testing.T, s store.Store) {
 			ids = append(ids, id)
 		}
 
-		checkPostInSearchResults(t, post1.Id, ids)
-		checkPostInSearchResults(t, post2.Id, ids)
-		checkPostInSearchResults(t, post3.Id, ids)
-		checkMatchesEqual(t, map[string][]string{
+		th.checkPostInSearchResults(t, post1.Id, ids)
+		th.checkPostInSearchResults(t, post2.Id, ids)
+		th.checkPostInSearchResults(t, post3.Id, ids)
+		th.checkMatchesEqual(t, map[string][]string{
 			post1.Id: {"things", "stuff"},
 			post2.Id: {"things"},
 			post3.Id: {"stuff"},
@@ -802,22 +813,23 @@ func testSearchESSearchPosts_AndOrTerms(t *testing.T, s store.Store) {
 	})
 }
 
-func testSearchESSearchPosts_Paging(t *testing.T, s store.Store) {
-	team, err := s.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+func testSearchESSearchPosts_Paging(t *testing.T, th *SearchTestHelper) {
+	team, apperr := th.Store.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+	require.Nil(t, apperr)
+	defer func() { require.Nil(t, th.Store.Team().PermanentDelete(team.Id)) }()
+	channel, apperr := th.Store.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
+	require.Nil(t, apperr)
+	user, err := th.createUser("testuser", "testuser", "Test", "User")
 	require.Nil(t, err)
-	defer func() { require.Nil(t, s.Team().PermanentDelete(team.Id)) }()
-	channel, err := s.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
-	require.Nil(t, err)
-	user, err := s.User().Save(createUser("testuser", "testuser", "Test", "User"))
-	require.Nil(t, err)
-	require.Nil(t, addUserToTeamsAndChannels(s, user, []string{team.Id}, []string{channel.Id}))
-	defer func() { require.Nil(t, s.User().PermanentDelete(user.Id)) }()
+	require.Nil(t, th.addUserToTeams(user, []string{team.Id}))
+	require.Nil(t, th.addUserToChannels(user, []string{channel.Id}))
+	defer func() { require.Nil(t, th.Store.User().PermanentDelete(user.Id)) }()
 
-	post1, err := s.Post().Save(createPost(user.Id, channel.Id, "things and stuff"))
+	post1, err := th.createPost(user.Id, channel.Id, "things and stuff", "", 0)
 	require.Nil(t, err)
-	post2, err := s.Post().Save(createPost(user.Id, channel.Id, "things"))
+	post2, err := th.createPost(user.Id, channel.Id, "things", "", 0)
 	require.Nil(t, err)
-	post3, err := s.Post().Save(createPost(user.Id, channel.Id, "stuff"))
+	post3, err := th.createPost(user.Id, channel.Id, "stuff", "", 0)
 	require.Nil(t, err)
 
 	searchParams := []*model.SearchParams{
@@ -865,7 +877,7 @@ func testSearchESSearchPosts_Paging(t *testing.T, s store.Store) {
 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			res, err := s.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, tc.Page, tc.PerPage)
+			res, err := th.Store.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, tc.Page, tc.PerPage)
 			require.Nil(t, err)
 
 			expectedIds := []string{}
@@ -879,25 +891,26 @@ func testSearchESSearchPosts_Paging(t *testing.T, s store.Store) {
 			}
 
 			require.ElementsMatch(t, expectedIds, ids)
-			checkMatchesEqual(t, tc.Matches, res.Matches)
+			th.checkMatchesEqual(t, tc.Matches, res.Matches)
 		})
 	}
 }
 
-func testSearchESSearchPosts_QuotedTerms(t *testing.T, s store.Store) {
-	team, err := s.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+func testSearchESSearchPosts_QuotedTerms(t *testing.T, th *SearchTestHelper) {
+	team, apperr := th.Store.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+	require.Nil(t, apperr)
+	defer func() { require.Nil(t, th.Store.Team().PermanentDelete(team.Id)) }()
+	channel, apperr := th.Store.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
+	require.Nil(t, apperr)
+	user, err := th.createUser("testuser", "testuser", "Test", "User")
 	require.Nil(t, err)
-	defer func() { require.Nil(t, s.Team().PermanentDelete(team.Id)) }()
-	channel, err := s.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
-	require.Nil(t, err)
-	user, err := s.User().Save(createUser("testuser", "testuser", "Test", "User"))
-	require.Nil(t, err)
-	require.Nil(t, addUserToTeamsAndChannels(s, user, []string{team.Id}, []string{channel.Id}))
-	defer func() { require.Nil(t, s.User().PermanentDelete(user.Id)) }()
+	require.Nil(t, th.addUserToTeams(user, []string{team.Id}))
+	require.Nil(t, th.addUserToChannels(user, []string{channel.Id}))
+	defer func() { require.Nil(t, th.Store.User().PermanentDelete(user.Id)) }()
 
-	post1, err := s.Post().Save(createPost(user.Id, channel.Id, "large dog"))
+	post1, err := th.createPost(user.Id, channel.Id, "large dog", "", 0)
 	require.Nil(t, err)
-	post2, err := s.Post().Save(createPost(user.Id, channel.Id, "large scary dog"))
+	post2, err := th.createPost(user.Id, channel.Id, "large scary dog", "", 0)
 	require.Nil(t, err)
 
 	searchParams := []*model.SearchParams{
@@ -943,7 +956,7 @@ func testSearchESSearchPosts_QuotedTerms(t *testing.T, s store.Store) {
 			searchParams[0].Terms = tc.Terms
 			searchParams[0].ExcludedTerms = tc.ExcludedTerms
 
-			res, err := s.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
+			res, err := th.Store.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
 			require.Nil(t, err)
 
 			expectedIds := []string{}
@@ -957,27 +970,28 @@ func testSearchESSearchPosts_QuotedTerms(t *testing.T, s store.Store) {
 			}
 
 			require.ElementsMatch(t, expectedIds, ids)
-			checkMatchesEqual(t, tc.Matches, res.Matches)
+			th.checkMatchesEqual(t, tc.Matches, res.Matches)
 		})
 	}
 }
 
-func testSearchESSearchPosts_StopWords(t *testing.T, s store.Store) {
-	team, err := s.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+func testSearchESSearchPosts_StopWords(t *testing.T, th *SearchTestHelper) {
+	team, apperr := th.Store.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+	require.Nil(t, apperr)
+	defer func() { require.Nil(t, th.Store.Team().PermanentDelete(team.Id)) }()
+	channel, apperr := th.Store.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
+	require.Nil(t, apperr)
+	user, err := th.createUser("testuser", "testuser", "Test", "User")
 	require.Nil(t, err)
-	defer func() { require.Nil(t, s.Team().PermanentDelete(team.Id)) }()
-	channel, err := s.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
-	require.Nil(t, err)
-	user, err := s.User().Save(createUser("testuser", "testuser", "Test", "User"))
-	require.Nil(t, err)
-	require.Nil(t, addUserToTeamsAndChannels(s, user, []string{team.Id}, []string{channel.Id}))
-	defer func() { require.Nil(t, s.User().PermanentDelete(user.Id)) }()
+	require.Nil(t, th.addUserToTeams(user, []string{team.Id}))
+	require.Nil(t, th.addUserToChannels(user, []string{channel.Id}))
+	defer func() { require.Nil(t, th.Store.User().PermanentDelete(user.Id)) }()
 
-	post1, err := s.Post().Save(createPost(user.Id, channel.Id, "I enjoyed eating the house"))
+	post1, err := th.createPost(user.Id, channel.Id, "I enjoyed eating the house", "", 0)
 	require.Nil(t, err)
-	post2, err := s.Post().Save(createPost(user.Id, channel.Id, "I enjoyed eating house"))
+	post2, err := th.createPost(user.Id, channel.Id, "I enjoyed eating house", "", 0)
 	require.Nil(t, err)
-	post3, err := s.Post().Save(createPost(user.Id, channel.Id, "I enjoyed eating a house"))
+	post3, err := th.createPost(user.Id, channel.Id, "I enjoyed eating a house", "", 0)
 	require.Nil(t, err)
 
 	searchParams := []*model.SearchParams{
@@ -1031,7 +1045,7 @@ func testSearchESSearchPosts_StopWords(t *testing.T, s store.Store) {
 		t.Run(tc.Name, func(t *testing.T) {
 			searchParams[0].Terms = tc.Terms
 
-			res, err := s.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
+			res, err := th.Store.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
 			require.Nil(t, err)
 
 			expectedIds := []string{}
@@ -1045,25 +1059,26 @@ func testSearchESSearchPosts_StopWords(t *testing.T, s store.Store) {
 			}
 
 			require.ElementsMatch(t, expectedIds, ids)
-			checkMatchesEqual(t, tc.Matches, res.Matches)
+			th.checkMatchesEqual(t, tc.Matches, res.Matches)
 		})
 	}
 }
 
-func testSearchESSearchPosts_Stemming(t *testing.T, s store.Store) {
-	team, err := s.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+func testSearchESSearchPosts_Stemming(t *testing.T, th *SearchTestHelper) {
+	team, apperr := th.Store.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+	require.Nil(t, apperr)
+	defer func() { require.Nil(t, th.Store.Team().PermanentDelete(team.Id)) }()
+	channel, apperr := th.Store.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
+	require.Nil(t, apperr)
+	user, err := th.createUser("testuser", "testuser", "Test", "User")
 	require.Nil(t, err)
-	defer func() { require.Nil(t, s.Team().PermanentDelete(team.Id)) }()
-	channel, err := s.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
-	require.Nil(t, err)
-	user, err := s.User().Save(createUser("testuser", "testuser", "Test", "User"))
-	require.Nil(t, err)
-	require.Nil(t, addUserToTeamsAndChannels(s, user, []string{team.Id}, []string{channel.Id}))
-	defer func() { require.Nil(t, s.User().PermanentDelete(user.Id)) }()
+	require.Nil(t, th.addUserToTeams(user, []string{team.Id}))
+	require.Nil(t, th.addUserToChannels(user, []string{channel.Id}))
+	defer func() { require.Nil(t, th.Store.User().PermanentDelete(user.Id)) }()
 
-	post1, err := s.Post().Save(createPost(user.Id, channel.Id, "sail"))
+	post1, err := th.createPost(user.Id, channel.Id, "sail", "", 0)
 	require.Nil(t, err)
-	post2, err := s.Post().Save(createPost(user.Id, channel.Id, "sailing"))
+	post2, err := th.createPost(user.Id, channel.Id, "sailing", "", 0)
 	require.Nil(t, err)
 
 	searchParams := []*model.SearchParams{
@@ -1100,7 +1115,7 @@ func testSearchESSearchPosts_Stemming(t *testing.T, s store.Store) {
 		t.Run(tc.Name, func(t *testing.T) {
 			searchParams[0].Terms = tc.Terms
 
-			res, err := s.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
+			res, err := th.Store.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
 			require.Nil(t, err)
 
 			expectedIds := []string{}
@@ -1114,25 +1129,26 @@ func testSearchESSearchPosts_Stemming(t *testing.T, s store.Store) {
 			}
 
 			require.ElementsMatch(t, expectedIds, ids)
-			checkMatchesEqual(t, tc.Matches, res.Matches)
+			th.checkMatchesEqual(t, tc.Matches, res.Matches)
 		})
 	}
 }
 
-func testSearchESSearchPosts_Wildcard(t *testing.T, s store.Store) {
-	team, err := s.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+func testSearchESSearchPosts_Wildcard(t *testing.T, th *SearchTestHelper) {
+	team, apperr := th.Store.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+	require.Nil(t, apperr)
+	defer func() { require.Nil(t, th.Store.Team().PermanentDelete(team.Id)) }()
+	channel, apperr := th.Store.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
+	require.Nil(t, apperr)
+	user, err := th.createUser("testuser", "testuser", "Test", "User")
 	require.Nil(t, err)
-	defer func() { require.Nil(t, s.Team().PermanentDelete(team.Id)) }()
-	channel, err := s.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
-	require.Nil(t, err)
-	user, err := s.User().Save(createUser("testuser", "testuser", "Test", "User"))
-	require.Nil(t, err)
-	require.Nil(t, addUserToTeamsAndChannels(s, user, []string{team.Id}, []string{channel.Id}))
-	defer func() { require.Nil(t, s.User().PermanentDelete(user.Id)) }()
+	require.Nil(t, th.addUserToTeams(user, []string{team.Id}))
+	require.Nil(t, th.addUserToChannels(user, []string{channel.Id}))
+	defer func() { require.Nil(t, th.Store.User().PermanentDelete(user.Id)) }()
 
-	post1, err := s.Post().Save(createPost(user.Id, channel.Id, "insensitive"))
+	post1, err := th.createPost(user.Id, channel.Id, "insensitive", "", 0)
 	require.Nil(t, err)
-	post2, err := s.Post().Save(createPost(user.Id, channel.Id, "insensible"))
+	post2, err := th.createPost(user.Id, channel.Id, "insensible", "", 0)
 	require.Nil(t, err)
 
 	searchParams := []*model.SearchParams{
@@ -1161,7 +1177,7 @@ func testSearchESSearchPosts_Wildcard(t *testing.T, s store.Store) {
 		t.Run(tc.Name, func(t *testing.T) {
 			searchParams[0].Terms = tc.Terms
 
-			res, err := s.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
+			res, err := th.Store.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
 			require.Nil(t, err)
 
 			expectedIds := []string{}
@@ -1175,25 +1191,26 @@ func testSearchESSearchPosts_Wildcard(t *testing.T, s store.Store) {
 			}
 
 			require.ElementsMatch(t, expectedIds, ids)
-			checkMatchesEqual(t, tc.Matches, res.Matches)
+			th.checkMatchesEqual(t, tc.Matches, res.Matches)
 		})
 	}
 }
 
-func testSearchESSearchPosts_AlternativeUnicodeForms(t *testing.T, s store.Store) {
-	team, err := s.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+func testSearchESSearchPosts_AlternativeUnicodeForms(t *testing.T, th *SearchTestHelper) {
+	team, apperr := th.Store.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+	require.Nil(t, apperr)
+	defer func() { require.Nil(t, th.Store.Team().PermanentDelete(team.Id)) }()
+	channel, apperr := th.Store.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
+	require.Nil(t, apperr)
+	user, err := th.createUser("testuser", "testuser", "Test", "User")
 	require.Nil(t, err)
-	defer func() { require.Nil(t, s.Team().PermanentDelete(team.Id)) }()
-	channel, err := s.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
-	require.Nil(t, err)
-	user, err := s.User().Save(createUser("testuser", "testuser", "Test", "User"))
-	require.Nil(t, err)
-	require.Nil(t, addUserToTeamsAndChannels(s, user, []string{team.Id}, []string{channel.Id}))
-	defer func() { require.Nil(t, s.User().PermanentDelete(user.Id)) }()
+	require.Nil(t, th.addUserToTeams(user, []string{team.Id}))
+	require.Nil(t, th.addUserToChannels(user, []string{channel.Id}))
+	defer func() { require.Nil(t, th.Store.User().PermanentDelete(user.Id)) }()
 
-	post1, err := s.Post().Save(createPost(user.Id, channel.Id, "café"))
+	post1, err := th.createPost(user.Id, channel.Id, "café", "", 0)
 	require.Nil(t, err)
-	post2, err := s.Post().Save(createPost(user.Id, channel.Id, "café"))
+	post2, err := th.createPost(user.Id, channel.Id, "café", "", 0)
 	require.Nil(t, err)
 
 	searchParams := []*model.SearchParams{
@@ -1230,7 +1247,7 @@ func testSearchESSearchPosts_AlternativeUnicodeForms(t *testing.T, s store.Store
 		t.Run(tc.Name, func(t *testing.T) {
 			searchParams[0].Terms = tc.Terms
 
-			res, err := s.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
+			res, err := th.Store.Post().SearchPostsInTeamForUser(searchParams, user.Id, team.Id, false, false, 0, 20)
 			require.Nil(t, err)
 
 			expectedIds := []string{}
@@ -1244,35 +1261,37 @@ func testSearchESSearchPosts_AlternativeUnicodeForms(t *testing.T, s store.Store
 			}
 
 			require.ElementsMatch(t, expectedIds, ids)
-			checkMatchesEqual(t, tc.Matches, res.Matches)
+			th.checkMatchesEqual(t, tc.Matches, res.Matches)
 		})
 	}
 }
 
-func testSearchESSearchPosts_FromAndIn(t *testing.T, s store.Store) {
-	team, err := s.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+func testSearchESSearchPosts_FromAndIn(t *testing.T, th *SearchTestHelper) {
+	team, apperr := th.Store.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+	require.Nil(t, apperr)
+	defer func() { require.Nil(t, th.Store.Team().PermanentDelete(team.Id)) }()
+	channel1, apperr := th.Store.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
+	require.Nil(t, apperr)
+	channel2, apperr := th.Store.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c2", DisplayName: "c2", Type: model.CHANNEL_OPEN}, -1)
+	require.Nil(t, apperr)
+	user1, err := th.createUser("testuserone", "testuserone", "Test", "One")
 	require.Nil(t, err)
-	defer func() { require.Nil(t, s.Team().PermanentDelete(team.Id)) }()
-	channel1, err := s.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
+	require.Nil(t, th.addUserToTeams(user1, []string{team.Id}))
+	require.Nil(t, th.addUserToChannels(user1, []string{channel1.Id, channel2.Id}))
+	defer func() { require.Nil(t, th.Store.User().PermanentDelete(user1.Id)) }()
+	user2, err := th.createUser("testusertwo", "testusertwo", "Test", "Two")
 	require.Nil(t, err)
-	channel2, err := s.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c2", DisplayName: "c2", Type: model.CHANNEL_OPEN}, -1)
-	require.Nil(t, err)
-	user1, err := s.User().Save(createUser("testuserone", "testuserone", "Test", "One"))
-	require.Nil(t, err)
-	require.Nil(t, addUserToTeamsAndChannels(s, user1, []string{team.Id}, []string{channel1.Id, channel2.Id}))
-	defer func() { require.Nil(t, s.User().PermanentDelete(user1.Id)) }()
-	user2, err := s.User().Save(createUser("testusertwo", "testusertwo", "Test", "Two"))
-	require.Nil(t, err)
-	require.Nil(t, addUserToTeamsAndChannels(s, user2, []string{team.Id}, []string{channel1.Id, channel2.Id}))
-	defer func() { require.Nil(t, s.User().PermanentDelete(user2.Id)) }()
+	require.Nil(t, th.addUserToTeams(user2, []string{team.Id}))
+	require.Nil(t, th.addUserToChannels(user2, []string{channel1.Id, channel2.Id}))
+	defer func() { require.Nil(t, th.Store.User().PermanentDelete(user2.Id)) }()
 
-	post1, err := s.Post().Save(createPost(user1.Id, channel1.Id, "post in channel 1 by user 1"))
+	post1, err := th.createPost(user1.Id, channel1.Id, "post in channel 1 by user 1", "", 0)
 	require.Nil(t, err)
-	post2, err := s.Post().Save(createPost(user1.Id, channel2.Id, "post in channel 2 by user 1"))
+	post2, err := th.createPost(user1.Id, channel2.Id, "post in channel 2 by user 1", "", 0)
 	require.Nil(t, err)
-	post3, err := s.Post().Save(createPost(user2.Id, channel1.Id, "post in channel 1 by user 2"))
+	post3, err := th.createPost(user2.Id, channel1.Id, "post in channel 1 by user 2", "", 0)
 	require.Nil(t, err)
-	post4, err := s.Post().Save(createPost(user2.Id, channel2.Id, "post in channel 2 by user 2"))
+	post4, err := th.createPost(user2.Id, channel2.Id, "post in channel 2 by user 2", "", 0)
 	require.Nil(t, err)
 
 	searchParams := []*model.SearchParams{
@@ -1359,7 +1378,7 @@ func testSearchESSearchPosts_FromAndIn(t *testing.T, s store.Store) {
 			searchParams[0].ExcludedUsers = tc.ExcludedUsers
 			searchParams[0].ExcludedChannels = tc.ExcludedChannels
 
-			res, err := s.Post().SearchPostsInTeamForUser(searchParams, tc.User.Id, team.Id, false, false, 0, 20)
+			res, err := th.Store.Post().SearchPostsInTeamForUser(searchParams, tc.User.Id, team.Id, false, false, 0, 20)
 			require.Nil(t, err)
 
 			expectedIds := []string{}
@@ -1373,29 +1392,30 @@ func testSearchESSearchPosts_FromAndIn(t *testing.T, s store.Store) {
 			}
 
 			require.ElementsMatch(t, expectedIds, ids)
-			checkMatchesEqual(t, tc.Matches, res.Matches)
+			th.checkMatchesEqual(t, tc.Matches, res.Matches)
 		})
 	}
 }
 
-func testSearchESSearchPosts_AfterBeforeOn(t *testing.T, s store.Store) {
-	team, err := s.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+func testSearchESSearchPosts_AfterBeforeOn(t *testing.T, th *SearchTestHelper) {
+	team, apperr := th.Store.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+	require.Nil(t, apperr)
+	defer func() { require.Nil(t, th.Store.Team().PermanentDelete(team.Id)) }()
+	channel, apperr := th.Store.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
+	require.Nil(t, apperr)
+	user, err := th.createUser("testuser", "testuser", "Test", "User")
 	require.Nil(t, err)
-	defer func() { require.Nil(t, s.Team().PermanentDelete(team.Id)) }()
-	channel, err := s.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
-	require.Nil(t, err)
-	user, err := s.User().Save(createUser("testuser", "testuser", "Test", "User"))
-	require.Nil(t, err)
-	require.Nil(t, addUserToTeamsAndChannels(s, user, []string{team.Id}, []string{channel.Id}))
-	defer func() { require.Nil(t, s.User().PermanentDelete(user.Id)) }()
+	require.Nil(t, th.addUserToTeams(user, []string{team.Id}))
+	require.Nil(t, th.addUserToChannels(user, []string{channel.Id}))
+	defer func() { require.Nil(t, th.Store.User().PermanentDelete(user.Id)) }()
 
-	post1, err := s.Post().Save(createPostAtTime(user.Id, channel.Id, "post on 2018-08-28 at 23:59 GMT", 1535500740000))
+	post1, err := th.createPost(user.Id, channel.Id, "post on 2018-08-28 at 23:59 GMT", "", 1535500740000)
 	require.Nil(t, err)
-	post2, err := s.Post().Save(createPostAtTime(user.Id, channel.Id, "post on 2018-08-29 at 00:01 GMT", 1535500860000))
+	post2, err := th.createPost(user.Id, channel.Id, "post on 2018-08-29 at 00:01 GMT", "", 1535500860000)
 	require.Nil(t, err)
-	post3, err := s.Post().Save(createPostAtTime(user.Id, channel.Id, "post on 2018-08-29 at 23:59 GMT", 1535587140000))
+	post3, err := th.createPost(user.Id, channel.Id, "post on 2018-08-29 at 23:59 GMT", "", 1535587140000)
 	require.Nil(t, err)
-	post4, err := s.Post().Save(createPostAtTime(user.Id, channel.Id, "post on 2018-08-30 at 00:01 GMT", 1535587260000))
+	post4, err := th.createPost(user.Id, channel.Id, "post on 2018-08-30 at 00:01 GMT", "", 1535587260000)
 	require.Nil(t, err)
 
 	earlierTimeZoneOffset := 1 * 60 * 60
@@ -1673,7 +1693,7 @@ func testSearchESSearchPosts_AfterBeforeOn(t *testing.T, s store.Store) {
 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			res, err := s.Post().SearchPostsInTeamForUser(tc.SearchParams, user.Id, team.Id, false, false, 0, 20)
+			res, err := th.Store.Post().SearchPostsInTeamForUser(tc.SearchParams, user.Id, team.Id, false, false, 0, 20)
 			require.Nil(t, err)
 
 			ids := []string{}
@@ -1686,22 +1706,23 @@ func testSearchESSearchPosts_AfterBeforeOn(t *testing.T, s store.Store) {
 	}
 }
 
-func testSearchESSearchPosts_Hashtags(t *testing.T, s store.Store) {
-	team, err := s.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+func testSearchESSearchPosts_Hashtags(t *testing.T, th *SearchTestHelper) {
+	team, apperr := th.Store.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+	require.Nil(t, apperr)
+	defer func() { require.Nil(t, th.Store.Team().PermanentDelete(team.Id)) }()
+	channel, apperr := th.Store.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
+	require.Nil(t, apperr)
+	user, err := th.createUser("testuser", "testuser", "Test", "User")
 	require.Nil(t, err)
-	defer func() { require.Nil(t, s.Team().PermanentDelete(team.Id)) }()
-	channel, err := s.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
-	require.Nil(t, err)
-	user, err := s.User().Save(createUser("testuser", "testuser", "Test", "User"))
-	require.Nil(t, err)
-	require.Nil(t, addUserToTeamsAndChannels(s, user, []string{team.Id}, []string{channel.Id}))
-	defer func() { require.Nil(t, s.User().PermanentDelete(user.Id)) }()
+	require.Nil(t, th.addUserToTeams(user, []string{team.Id}))
+	require.Nil(t, th.addUserToChannels(user, []string{channel.Id}))
+	defer func() { require.Nil(t, th.Store.User().PermanentDelete(user.Id)) }()
 
-	post1, err := s.Post().Save(createPostWithHashtags(user.Id, channel.Id, "From bean to cup, you #hashtag up", "#hashtag"))
+	post1, err := th.createPost(user.Id, channel.Id, "From bean to cup, you #hashtag up", "#hashtag", 0)
 	require.Nil(t, err)
-	post2, err := s.Post().Save(createPost(user.Id, channel.Id, "I liek hashtags"))
+	post2, err := th.createPost(user.Id, channel.Id, "I liek hashtags", "", 0)
 	require.Nil(t, err)
-	post3, err := s.Post().Save(createPostWithHashtags(user.Id, channel.Id, "moar #hashtag please", "#hashtag"))
+	post3, err := th.createPost(user.Id, channel.Id, "moar #hashtag please", "#hashtag", 0)
 	require.Nil(t, err)
 
 	testCases := []struct {
@@ -1773,7 +1794,7 @@ func testSearchESSearchPosts_Hashtags(t *testing.T, s store.Store) {
 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			res, err := s.Post().SearchPostsInTeamForUser(tc.SearchParams, user.Id, team.Id, false, false, 0, 20)
+			res, err := th.Store.Post().SearchPostsInTeamForUser(tc.SearchParams, user.Id, team.Id, false, false, 0, 20)
 			require.Nil(t, err)
 
 			expectedIds := []string{}
@@ -1787,28 +1808,29 @@ func testSearchESSearchPosts_Hashtags(t *testing.T, s store.Store) {
 			}
 
 			require.ElementsMatch(t, expectedIds, ids)
-			checkMatchesEqual(t, tc.Matches, res.Matches)
+			th.checkMatchesEqual(t, tc.Matches, res.Matches)
 		})
 	}
 }
 
-func testSearchESSearchPosts_HashtagsAndOrWords(t *testing.T, s store.Store) {
-	team, err := s.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+func testSearchESSearchPosts_HashtagsAndOrWords(t *testing.T, th *SearchTestHelper) {
+	team, apperr := th.Store.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+	require.Nil(t, apperr)
+	defer func() { require.Nil(t, th.Store.Team().PermanentDelete(team.Id)) }()
+	channel, apperr := th.Store.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
+	require.Nil(t, apperr)
+	user, err := th.createUser("testuser", "testuser", "Test", "User")
 	require.Nil(t, err)
-	defer func() { require.Nil(t, s.Team().PermanentDelete(team.Id)) }()
-	channel, err := s.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
-	require.Nil(t, err)
-	user, err := s.User().Save(createUser("testuser", "testuser", "Test", "User"))
-	require.Nil(t, err)
-	require.Nil(t, addUserToTeamsAndChannels(s, user, []string{team.Id}, []string{channel.Id}))
-	defer func() { require.Nil(t, s.User().PermanentDelete(user.Id)) }()
+	require.Nil(t, th.addUserToTeams(user, []string{team.Id}))
+	require.Nil(t, th.addUserToChannels(user, []string{channel.Id}))
+	defer func() { require.Nil(t, th.Store.User().PermanentDelete(user.Id)) }()
 
 	// Test searching for posts with Markdown underscores in them.
-	post1, err := s.Post().Save(createPostWithHashtags(user.Id, channel.Id, "From bean to cup, you #hashtag up", "#hashtag"))
+	post1, err := th.createPost(user.Id, channel.Id, "From bean to cup, you #hashtag up", "#hashtag", 0)
 	require.Nil(t, err)
-	post2, err := s.Post().Save(createPostWithHashtags(user.Id, channel.Id, "#hashtag mashup city", "#hashtag"))
+	post2, err := th.createPost(user.Id, channel.Id, "#hashtag mashup city", "#hashtag", 0)
 	require.Nil(t, err)
-	post3, err := s.Post().Save(createPost(user.Id, channel.Id, "has bean"))
+	post3, err := th.createPost(user.Id, channel.Id, "has bean", "", 0)
 	require.Nil(t, err)
 
 	testCases := []struct {
@@ -1852,7 +1874,7 @@ func testSearchESSearchPosts_HashtagsAndOrWords(t *testing.T, s store.Store) {
 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			res, err := s.Post().SearchPostsInTeamForUser(tc.SearchParams, user.Id, team.Id, false, false, 0, 20)
+			res, err := th.Store.Post().SearchPostsInTeamForUser(tc.SearchParams, user.Id, team.Id, false, false, 0, 20)
 			require.Nil(t, err)
 
 			ids := []string{}
@@ -1865,23 +1887,24 @@ func testSearchESSearchPosts_HashtagsAndOrWords(t *testing.T, s store.Store) {
 	}
 }
 
-func testSearchESSearchPosts_HashtagsCaseInsensitive(t *testing.T, s store.Store) {
-	team, err := s.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+func testSearchESSearchPosts_HashtagsCaseInsensitive(t *testing.T, th *SearchTestHelper) {
+	team, apperr := th.Store.Team().Save(&model.Team{Name: "t1", DisplayName: "t1", Type: model.TEAM_OPEN})
+	require.Nil(t, apperr)
+	defer func() { require.Nil(t, th.Store.Team().PermanentDelete(team.Id)) }()
+	channel, apperr := th.Store.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
+	require.Nil(t, apperr)
+	user, err := th.createUser("testuser", "testuser", "Test", "User")
 	require.Nil(t, err)
-	defer func() { require.Nil(t, s.Team().PermanentDelete(team.Id)) }()
-	channel, err := s.Channel().Save(&model.Channel{TeamId: team.Id, Name: "c1", DisplayName: "c1", Type: model.CHANNEL_OPEN}, -1)
-	require.Nil(t, err)
-	user, err := s.User().Save(createUser("testuser", "testuser", "Test", "User"))
-	require.Nil(t, err)
-	require.Nil(t, addUserToTeamsAndChannels(s, user, []string{team.Id}, []string{channel.Id}))
-	defer func() { require.Nil(t, s.User().PermanentDelete(user.Id)) }()
+	require.Nil(t, th.addUserToTeams(user, []string{team.Id}))
+	require.Nil(t, th.addUserToChannels(user, []string{channel.Id}))
+	defer func() { require.Nil(t, th.Store.User().PermanentDelete(user.Id)) }()
 
 	// Test searching for posts with Markdown underscores in them.
-	post1, err := s.Post().Save(createPostWithHashtags(user.Id, channel.Id, "From bean to cup, you #hashtag up", "#hashtag"))
+	post1, err := th.createPost(user.Id, channel.Id, "From bean to cup, you #hashtag up", "#hashtag", 0)
 	require.Nil(t, err)
-	post2, err := s.Post().Save(createPost(user.Id, channel.Id, "I liek hashtags"))
+	post2, err := th.createPost(user.Id, channel.Id, "I liek hashtags", "", 0)
 	require.Nil(t, err)
-	post3, err := s.Post().Save(createPostWithHashtags(user.Id, channel.Id, "moar #Hashtag please", "#Hashtag"))
+	post3, err := th.createPost(user.Id, channel.Id, "moar #Hashtag please", "#Hashtag", 0)
 	require.Nil(t, err)
 
 	testCases := []struct {
@@ -1936,7 +1959,7 @@ func testSearchESSearchPosts_HashtagsCaseInsensitive(t *testing.T, s store.Store
 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			res, err := s.Post().SearchPostsInTeamForUser(tc.SearchParams, user.Id, team.Id, false, false, 0, 20)
+			res, err := th.Store.Post().SearchPostsInTeamForUser(tc.SearchParams, user.Id, team.Id, false, false, 0, 20)
 			require.Nil(t, err)
 
 			expectedIds := []string{}
@@ -1950,7 +1973,7 @@ func testSearchESSearchPosts_HashtagsCaseInsensitive(t *testing.T, s store.Store
 			}
 
 			require.ElementsMatch(t, expectedIds, ids)
-			checkMatchesEqual(t, tc.Matches, res.Matches)
+			th.checkMatchesEqual(t, tc.Matches, res.Matches)
 		})
 	}
 }
