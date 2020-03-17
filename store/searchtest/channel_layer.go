@@ -76,45 +76,51 @@ func TestSearchChannelStore(t *testing.T, s store.Store, testEngine *SearchTestE
 }
 
 func testAutocompleteChannelByName(t *testing.T, th *SearchTestHelper) {
-	return
+	res, err := th.Store.Channel().AutocompleteInTeam(th.Team.Id, "ChannelA", false)
+	require.Nil(t, err)
+	channelIds := make([]string, len(*res))
+	for i, channel := range *res {
+		channelIds[i] = channel.Id
+	}
+	require.ElementsMatch(t, []string{th.ChannelA.Id, th.ChannelAlternate.Id}, channelIds)
 }
 
 func testAutocompleteChannelByDisplayName(t *testing.T, th *SearchTestHelper) {
-	return
+	t.Skip("Test not implemented yet")
 }
 
 func testAutocompleteChannelByNameSplittedWithDashChar(t *testing.T, th *SearchTestHelper) {
-	return
+	t.Skip("Test not implemented yet")
 }
 
 func testAutocompleteChannelByNameSplittedWithCommaChar(t *testing.T, th *SearchTestHelper) {
-	return
+	t.Skip("Test not implemented yet")
 }
 
 func testAutocompleteChannelByNameSplittedWithUnderscoreChar(t *testing.T, th *SearchTestHelper) {
-	return
+	t.Skip("Test not implemented yet")
 }
 
 func testAutocompleteChannelByDisplayNameSplittedByWhitespaces(t *testing.T, th *SearchTestHelper) {
-	return
+	t.Skip("Test not implemented yet")
 }
 
 func testSearchChannelsInCaseInsensitiveManner(t *testing.T, th *SearchTestHelper) {
-	return
+	t.Skip("Test not implemented yet")
 }
 
 func testSearchOnlyPublicChannels(t *testing.T, th *SearchTestHelper) {
-	return
+	t.Skip("Test not implemented yet")
 }
 
 func testSearchShouldSupportWildcardAfterHyphen(t *testing.T, th *SearchTestHelper) {
-	return
+	t.Skip("Test not implemented yet")
 }
 
 func testSearchShouldSupportHavingHyphenAsLastCharacter(t *testing.T, th *SearchTestHelper) {
-	return
+	t.Skip("Test not implemented yet")
 }
 
 func testSearchShouldSupportAutocompleteWithArchivedChannels(t *testing.T, th *SearchTestHelper) {
-	return
+	t.Skip("Test not implemented yet")
 }
