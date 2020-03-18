@@ -3,6 +3,7 @@ package searchtest
 import (
 	"testing"
 
+	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/store"
 	"github.com/stretchr/testify/require"
 )
@@ -69,32 +70,62 @@ func TestSearchChannelStore(t *testing.T, s store.Store, testEngine *SearchTestE
 	th := &SearchTestHelper{
 		Store: s,
 	}
-	err := th.InitFixtures()
+	err := th.SetupBasicFixtures()
 	require.Nil(t, err)
 	defer th.CleanFixtures()
 	runTestSearch(t, testEngine, searchChannelStoreTests, th)
 }
 
 func testAutocompleteChannelByName(t *testing.T, th *SearchTestHelper) {
+	alternate, err := th.createChannel(th.Team.Id, "channel-alternate", "Channel Alternate", "", model.CHANNEL_OPEN, false)
+	require.Nil(t, err)
+	defer th.deleteChannel(alternate)
+	res, err := th.Store.Channel().AutocompleteInTeam(th.Team.Id, "channel-a", false)
+	require.Nil(t, err)
+	channelIds := make([]string, len(*res))
+	for i, channel := range *res {
+		channelIds[i] = channel.Id
+	}
+	require.ElementsMatch(t, []string{th.ChannelBasic.Id, alternate.Id}, channelIds)
+}
+
+func testAutocompleteChannelByDisplayName(t *testing.T, th *SearchTestHelper) {
+	alternate, err := th.createChannel(th.Team.Id, "channel-alternate", "ChannelAlternate", "", model.CHANNEL_OPEN, false)
+	require.Nil(t, err)
+	defer th.deleteChannel(alternate)
 	res, err := th.Store.Channel().AutocompleteInTeam(th.Team.Id, "ChannelA", false)
 	require.Nil(t, err)
 	channelIds := make([]string, len(*res))
 	for i, channel := range *res {
 		channelIds[i] = channel.Id
 	}
-	require.ElementsMatch(t, []string{th.ChannelA.Id, th.ChannelAlternate.Id}, channelIds)
-}
-
-func testAutocompleteChannelByDisplayName(t *testing.T, th *SearchTestHelper) {
-	t.Skip("Test not implemented yet")
+	require.ElementsMatch(t, []string{th.ChannelBasic.Id, alternate.Id}, channelIds)
 }
 
 func testAutocompleteChannelByNameSplittedWithDashChar(t *testing.T, th *SearchTestHelper) {
-	t.Skip("Test not implemented yet")
+	alternate, err := th.createChannel(th.Team.Id, "channel-alternate", "ChannelAlternate", "", model.CHANNEL_OPEN, false)
+	require.Nil(t, err)
+	defer th.deleteChannel(alternate)
+	res, err := th.Store.Channel().AutocompleteInTeam(th.Team.Id, "channel-a", false)
+	require.Nil(t, err)
+	channelIds := make([]string, len(*res))
+	for i, channel := range *res {
+		channelIds[i] = channel.Id
+	}
+	require.ElementsMatch(t, []string{th.ChannelBasic.Id, alternate.Id}, channelIds)
 }
 
 func testAutocompleteChannelByNameSplittedWithCommaChar(t *testing.T, th *SearchTestHelper) {
-	t.Skip("Test not implemented yet")
+	alternate, err := th.createChannel(th.Team.Id, "channel,alternate", "ChannelAlternate", "", model.CHANNEL_OPEN, false)
+	require.Nil(t, err)
+	defer th.deleteChannel(alternate)
+	res, err := th.Store.Channel().AutocompleteInTeam(th.Team.Id, "channel-a", false)
+	require.Nil(t, err)
+	channelIds := make([]string, len(*res))
+	for i, channel := range *res {
+		channelIds[i] = channel.Id
+	}
+	require.ElementsMatch(t, []string{alternate.Id}, channelIds)
 }
 
 func testAutocompleteChannelByNameSplittedWithUnderscoreChar(t *testing.T, th *SearchTestHelper) {

@@ -37,9 +37,9 @@ func TestSearchPostStore(t *testing.T, s store.Store, testEngine *SearchTestEngi
 	th := &SearchTestHelper{
 		Store: s,
 	}
-	err := th.InitFixtures()
-	defer th.CleanFixtures()
+	err := th.SetupBasicFixtures()
 	require.Nil(t, err)
+	defer th.CleanFixtures()
 	runTestSearch(t, testEngine, searchPostStoreTests, th)
 }
 

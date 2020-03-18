@@ -15,25 +15,20 @@ import (
 )
 
 type SearchTestHelper struct {
-	Store                       store.Store
-	Team                        *model.Team
-	AnotherTeam                 *model.Team
-	User                        *model.User
-	User2                       *model.User
-	ChannelA                    *model.Channel
-	ChannelAlternate            *model.Channel
-	ChannelPrivate              *model.Channel
-	ChannelHyphen               *model.Channel
-	ChannelWhiteSpace           *model.Channel
-	ChannelWhiteSpaceAndHyphens *model.Channel
-	ChannelPurpose              *model.Channel
-	ChannelOtherTeam            *model.Channel
-	ChannelDeleted              *model.Channel
+	Store              store.Store
+	Team               *model.Team
+	AnotherTeam        *model.Team
+	User               *model.User
+	User2              *model.User
+	ChannelBasic       *model.Channel
+	ChannelPrivate     *model.Channel
+	ChannelAnotherTeam *model.Channel
+	ChannelDeleted     *model.Channel
 }
 
-func (th *SearchTestHelper) InitFixtures() error {
+func (th *SearchTestHelper) SetupBasicFixtures() error {
 	// Create teams
-	team, err := th.createTeam("test-team", "test tea", model.TEAM_OPEN)
+	team, err := th.createTeam("test-team", "test team", model.TEAM_OPEN)
 	if err != nil {
 		return err
 	}
@@ -53,47 +48,30 @@ func (th *SearchTestHelper) InitFixtures() error {
 	}
 
 	// Create channels
-	channelA, err := th.createChannel(team.Id, th.createChannelName(), "ChannelA", "", model.CHANNEL_OPEN, false)
+	channelBasic, err := th.createChannel(team.Id, "channel-a", "ChannelA", "", model.CHANNEL_OPEN, false)
 	if err != nil {
 		return err
 	}
-	channelAlternate, err := th.createChannel(team.Id, th.createChannelName(), "ChannelA (alternate)", "", model.CHANNEL_OPEN, false)
+	channelPrivate, err := th.createChannel(team.Id, "channel-private", "ChannelPrivate", "", model.CHANNEL_PRIVATE, false)
 	if err != nil {
 		return err
 	}
-	channelPrivate, err := th.createChannel(team.Id, th.createChannelName(), "ChannelB", "", model.CHANNEL_PRIVATE, false)
+	channelAnotherTeam, err := th.createChannel(anotherTeam.Id, "channel-a", "ChannelA", "", model.CHANNEL_OPEN, false)
 	if err != nil {
 		return err
 	}
-	channelHyphen, err := th.createChannel(team.Id, "off-topic", "Off-Topic", "", model.CHANNEL_OPEN, false)
-	if err != nil {
-		return err
-	}
-	channelWhiteSpace, err := th.createChannel(team.Id, "town-square", "Town Square", "", model.CHANNEL_OPEN, false)
-	if err != nil {
-		return err
-	}
-	channelWhiteSpaceAndHyphens, err := th.createChannel(team.Id, "native-mobile-apps", "Native Mobile Apps", "", model.CHANNEL_OPEN, false)
-	if err != nil {
-		return err
-	}
-	channelPurpose, err := th.createChannel(team.Id, "another-town-square", "Town Square", "This can now be searchable!", model.CHANNEL_OPEN, false)
-	if err != nil {
-		return err
-	}
-	channelDeleted, err := th.createChannel(team.Id, th.createChannelName(), "ChannelA (deleted)", "", model.CHANNEL_OPEN, true)
+	channelDeleted, err := th.createChannel(team.Id, "channel-deleted", "ChannelA (deleted)", "", model.CHANNEL_OPEN, true)
 	if err != nil {
 		return err
 	}
 
-	err = th.addUserToTeams(user, []string{team.Id})
+	err = th.addUserToTeams(user, []string{team.Id, anotherTeam.Id})
 	if err != nil {
 		return err
 	}
 
-	err = th.addUserToChannels(user, []string{channelA.Id, channelAlternate.Id, channelPrivate.Id,
-		channelHyphen.Id, channelWhiteSpace.Id, channelWhiteSpaceAndHyphens.Id,
-		channelPurpose.Id, channelDeleted.Id})
+	err = th.addUserToChannels(user, []string{channelBasic.Id, channelPrivate.Id,
+		channelAnotherTeam.Id, channelDeleted.Id})
 	if err != nil {
 		return err
 	}
@@ -102,13 +80,9 @@ func (th *SearchTestHelper) InitFixtures() error {
 	th.AnotherTeam = anotherTeam
 	th.User = user
 	th.User2 = user2
-	th.ChannelA = channelA
-	th.ChannelAlternate = channelAlternate
+	th.ChannelBasic = channelBasic
 	th.ChannelPrivate = channelPrivate
-	th.ChannelHyphen = channelHyphen
-	th.ChannelWhiteSpace = channelWhiteSpace
-	th.ChannelWhiteSpaceAndHyphens = channelWhiteSpaceAndHyphens
-	th.ChannelPurpose = channelPurpose
+	th.ChannelAnotherTeam = channelAnotherTeam
 	th.ChannelDeleted = channelDeleted
 
 	return nil
@@ -116,9 +90,7 @@ func (th *SearchTestHelper) InitFixtures() error {
 
 func (th *SearchTestHelper) CleanFixtures() error {
 	err := th.deleteChannels([]*model.Channel{
-		th.ChannelA, th.ChannelAlternate, th.ChannelPrivate,
-		th.ChannelHyphen, th.ChannelWhiteSpace, th.ChannelWhiteSpaceAndHyphens,
-		th.ChannelPurpose, th.ChannelDeleted,
+		th.ChannelBasic, th.ChannelPrivate, th.ChannelAnotherTeam, th.ChannelDeleted,
 	})
 	if err != nil {
 		return err
