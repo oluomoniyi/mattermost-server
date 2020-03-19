@@ -38,11 +38,11 @@ func (th *SearchTestHelper) SetupBasicFixtures() error {
 	}
 
 	// Create users
-	user, err := th.createUser("user1", "user1", "test", "user1")
+	user, err := th.createUser("basicusername1", "basicnickname1", "basicfirstname1", "basiclastname1")
 	if err != nil {
 		return err
 	}
-	user2, err := th.createUser("user2", "user2", "test", "user2")
+	user2, err := th.createUser("basicusername2", "basicnickname2", "basicfirstname2", "basiclastname2")
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,18 @@ func (th *SearchTestHelper) SetupBasicFixtures() error {
 		return err
 	}
 
+	err = th.addUserToTeams(user2, []string{team.Id, anotherTeam.Id})
+	if err != nil {
+		return err
+	}
+
 	err = th.addUserToChannels(user, []string{channelBasic.Id, channelPrivate.Id,
+		channelAnotherTeam.Id, channelDeleted.Id})
+	if err != nil {
+		return err
+	}
+
+	err = th.addUserToChannels(user2, []string{channelPrivate.Id,
 		channelAnotherTeam.Id, channelDeleted.Id})
 	if err != nil {
 		return err
