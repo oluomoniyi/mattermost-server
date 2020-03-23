@@ -164,7 +164,7 @@ func (th *SearchTestHelper) createTeamMember(teamID, userID string) *model.TeamM
 }
 
 func (th *SearchTestHelper) makeEmail() string {
-	return "success_" + model.NewId() + "@simulator.amazonseth.Store.com"
+	return "success_" + model.NewId() + "@simulator.amazon.com"
 }
 
 func (th *SearchTestHelper) createUser(username, nickname, firstName, lastName string) (*model.User, error) {
