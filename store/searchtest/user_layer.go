@@ -60,8 +60,8 @@ var searchUserStoreTests = []searchTest{
 		[]string{ENGINE_ALL},
 	},
 	{
-		"Should be able to autocomplete a user by part of its username splitted by point",
-		testAutocompleteUserByUsernameWithPoint,
+		"Should be able to autocomplete a user by part of its username splitted by Dot",
+		testAutocompleteUserByUsernameWithDot,
 		[]string{ENGINE_ALL},
 	},
 	{
@@ -122,6 +122,26 @@ var searchUserStoreTests = []searchTest{
 	{
 		"Should support search with a hyphen at the end of the term",
 		testSearchWithHyphenAtTheEndOfTheTerm,
+		[]string{ENGINE_ALL},
+	},
+	{
+		"Should support search all users in a team",
+		testSearchUsersInTeam,
+		[]string{ENGINE_ALL},
+	},
+	{
+		"Should support search all users in a team with username containing a dot",
+		testSearchUsersInTeamUsernameWithDot,
+		[]string{ENGINE_ALL},
+	},
+	{
+		"Should support search all users in a team with username containing a hyphen",
+		testSearchUsersInTeamUsernameWithHyphen,
+		[]string{ENGINE_ALL},
+	},
+	{
+		"Should support search all users in a team with username containing a underscore",
+		testSearchUsersInTeamUsernameWithUnderscore,
 		[]string{ENGINE_ALL},
 	},
 }
@@ -390,7 +410,7 @@ func testShouldNotMatchSpecificQueriesEmail(t *testing.T, th *SearchTestHelper) 
 	th.assertUsersMatchInAnyOrder(t, []*model.User{}, users.InChannel)
 	th.assertUsersMatchInAnyOrder(t, []*model.User{}, users.OutOfChannel)
 }
-func testAutocompleteUserByUsernameWithPoint(t *testing.T, th *SearchTestHelper) {
+func testAutocompleteUserByUsernameWithDot(t *testing.T, th *SearchTestHelper) {
 	userAlternate, err := th.createUser("alternate.username", "alternatenickname", "firstname", "altlastname")
 	require.Nil(t, err)
 	defer th.deleteUser(userAlternate)
@@ -401,15 +421,15 @@ func testAutocompleteUserByUsernameWithPoint(t *testing.T, th *SearchTestHelper)
 	options := &model.UserSearchOptions{
 		Limit: model.USER_SEARCH_DEFAULT_LIMIT,
 	}
-	// Should return results when searching for the whole username with point
-	t.Run("Should return results when searching for the whole username with point", func(t *testing.T) {
+	// Should return results when searching for the whole username with Dot
+	t.Run("Should return results when searching for the whole username with Dot", func(t *testing.T) {
 		users, apperr := th.Store.User().AutocompleteUsersInChannel(th.Team.Id, th.ChannelBasic.Id, "alternate.username", options)
 		require.Nil(t, apperr)
 		userAlternate.Sanitize(map[string]bool{})
 		th.assertUsersMatchInAnyOrder(t, []*model.User{userAlternate}, users.InChannel)
 		th.assertUsersMatchInAnyOrder(t, []*model.User{}, users.OutOfChannel)
 	})
-	t.Run("Should return results when searching for part of the username including the point", func(t *testing.T) {
+	t.Run("Should return results when searching for part of the username including the Dot", func(t *testing.T) {
 		users, apperr := th.Store.User().AutocompleteUsersInChannel(th.Team.Id, th.ChannelBasic.Id, ".username", options)
 		require.Nil(t, apperr)
 		userAlternate.Sanitize(map[string]bool{})
@@ -428,7 +448,7 @@ func testAutocompleteUserByUsernameWithWhiteSpace(t *testing.T, th *SearchTestHe
 	options := &model.UserSearchOptions{
 		Limit: model.USER_SEARCH_DEFAULT_LIMIT,
 	}
-	t.Run("Should return results when searching for the whole username with point", func(t *testing.T) {
+	t.Run("Should return results when searching for the whole username with Dot", func(t *testing.T) {
 		users, apperr := th.Store.User().AutocompleteUsersInChannel(th.Team.Id, th.ChannelBasic.Id, "alternate username", options)
 		require.Nil(t, apperr)
 		userAlternate.Sanitize(map[string]bool{})
@@ -680,4 +700,90 @@ func testSearchWithHyphenAtTheEndOfTheTerm(t *testing.T, th *SearchTestHelper) {
 	userAlternate.Sanitize(map[string]bool{})
 	th.assertUsersMatchInAnyOrder(t, []*model.User{userAlternate}, users.InChannel)
 	th.assertUsersMatchInAnyOrder(t, []*model.User{}, users.OutOfChannel)
+}
+
+func testSearchUsersInTeam(t *testing.T, th *SearchTestHelper) {
+	options := &model.UserSearchOptions{
+		Limit: model.USER_SEARCH_DEFAULT_LIMIT,
+	}
+	t.Run("Should return all the team users", func(t *testing.T) {
+		users, apperr := th.Store.User().Search(th.Team.Id, "", options)
+		require.Nil(t, apperr)
+		th.User.Sanitize(map[string]bool{})
+		th.User2.Sanitize(map[string]bool{})
+		th.assertUsersMatchInAnyOrder(t, []*model.User{th.User, th.User2}, users)
+	})
+	t.Run("Should return all the team users filtered by username", func(t *testing.T) {
+		users, apperr := th.Store.User().Search(th.Team.Id, "basicusername1", options)
+		require.Nil(t, apperr)
+		th.User.Sanitize(map[string]bool{})
+		th.assertUsersMatchInAnyOrder(t, []*model.User{th.User}, users)
+	})
+	t.Run("Should return all the team users filtered by username and with channel restrictions", func(t *testing.T) {
+		options.ViewRestrictions = &model.ViewUsersRestrictions{Channels: []string{th.ChannelBasic.Id}}
+		users, apperr := th.Store.User().Search(th.Team.Id, "basicusername", options)
+		require.Nil(t, apperr)
+		th.User.Sanitize(map[string]bool{})
+		th.assertUsersMatchInAnyOrder(t, []*model.User{th.User}, users)
+	})
+	t.Run("Should return all the team users filtered by username and with all channel restricted", func(t *testing.T) {
+		options.ViewRestrictions = &model.ViewUsersRestrictions{Channels: []string{}}
+		users, apperr := th.Store.User().Search(th.Team.Id, "basicusername1", options)
+		require.Nil(t, apperr)
+		th.assertUsersMatchInAnyOrder(t, []*model.User{}, users)
+	})
+}
+
+func testSearchUsersInTeamUsernameWithDot(t *testing.T, th *SearchTestHelper) {
+	userAlternate, err := th.createUser("alternate.username", "altnickname", "altfirst", "altlast")
+	require.Nil(t, err)
+	defer th.deleteUser(userAlternate)
+	err = th.addUserToTeams(userAlternate, []string{th.Team.Id})
+	require.Nil(t, err)
+	err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
+	require.Nil(t, err)
+	options := &model.UserSearchOptions{
+		AllowFullNames: true,
+		Limit:          model.USER_SEARCH_DEFAULT_LIMIT,
+	}
+	users, apperr := th.Store.User().Search(th.Team.Id, "alternate.", options)
+	require.Nil(t, apperr)
+	userAlternate.Sanitize(map[string]bool{})
+	th.assertUsersMatchInAnyOrder(t, []*model.User{userAlternate}, users)
+}
+
+func testSearchUsersInTeamUsernameWithHyphen(t *testing.T, th *SearchTestHelper) {
+	userAlternate, err := th.createUser("alternate-username", "altnickname", "altfirst", "altlast")
+	require.Nil(t, err)
+	defer th.deleteUser(userAlternate)
+	err = th.addUserToTeams(userAlternate, []string{th.Team.Id})
+	require.Nil(t, err)
+	err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
+	require.Nil(t, err)
+	options := &model.UserSearchOptions{
+		AllowFullNames: true,
+		Limit:          model.USER_SEARCH_DEFAULT_LIMIT,
+	}
+	users, apperr := th.Store.User().Search(th.Team.Id, "alternate-", options)
+	require.Nil(t, apperr)
+	userAlternate.Sanitize(map[string]bool{})
+	th.assertUsersMatchInAnyOrder(t, []*model.User{userAlternate}, users)
+}
+
+func testSearchUsersInTeamUsernameWithUnderscore(t *testing.T, th *SearchTestHelper) {
+	userAlternate, err := th.createUser("alternate_username", "altnickname", "altfirst", "altlast")
+	require.Nil(t, err)
+	defer th.deleteUser(userAlternate)
+	err = th.addUserToTeams(userAlternate, []string{th.Team.Id})
+	require.Nil(t, err)
+	err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
+	require.Nil(t, err)
+	options := &model.UserSearchOptions{
+		AllowFullNames: true,
+		Limit:          model.USER_SEARCH_DEFAULT_LIMIT,
+	}
+	users, apperr := th.Store.User().Search(th.Team.Id, "alternate_", options)
+	require.Nil(t, apperr)
+	userAlternate.Sanitize(map[string]bool{})
+	th.assertUsersMatchInAnyOrder(t, []*model.User{userAlternate}, users)
 }
