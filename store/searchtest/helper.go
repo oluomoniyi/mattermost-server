@@ -20,6 +20,7 @@ type SearchTestHelper struct {
 	AnotherTeam        *model.Team
 	User               *model.User
 	User2              *model.User
+	UserAnotherTeam    *model.User
 	ChannelBasic       *model.Channel
 	ChannelPrivate     *model.Channel
 	ChannelAnotherTeam *model.Channel
@@ -46,6 +47,10 @@ func (th *SearchTestHelper) SetupBasicFixtures() error {
 	if err != nil {
 		return err
 	}
+	useranother, err := th.createUser("basicusername3", "basicnickname3", "basicfirstname3", "basiclastname3")
+	if err != nil {
+		return err
+	}
 
 	// Create channels
 	channelBasic, err := th.createChannel(team.Id, "channel-a", "ChannelA", "", model.CHANNEL_OPEN, false)
@@ -56,11 +61,11 @@ func (th *SearchTestHelper) SetupBasicFixtures() error {
 	if err != nil {
 		return err
 	}
-	channelAnotherTeam, err := th.createChannel(anotherTeam.Id, "channel-a", "ChannelA", "", model.CHANNEL_OPEN, false)
+	channelDeleted, err := th.createChannel(team.Id, "channel-deleted", "ChannelA (deleted)", "", model.CHANNEL_OPEN, true)
 	if err != nil {
 		return err
 	}
-	channelDeleted, err := th.createChannel(team.Id, "channel-deleted", "ChannelA (deleted)", "", model.CHANNEL_OPEN, true)
+	channelAnotherTeam, err := th.createChannel(anotherTeam.Id, "channel-a", "ChannelA", "", model.CHANNEL_OPEN, false)
 	if err != nil {
 		return err
 	}
@@ -75,14 +80,22 @@ func (th *SearchTestHelper) SetupBasicFixtures() error {
 		return err
 	}
 
-	err = th.addUserToChannels(user, []string{channelBasic.Id, channelPrivate.Id,
-		channelAnotherTeam.Id, channelDeleted.Id})
+	err = th.addUserToTeams(useranother, []string{anotherTeam.Id})
 	if err != nil {
 		return err
 	}
 
-	err = th.addUserToChannels(user2, []string{channelPrivate.Id,
-		channelAnotherTeam.Id, channelDeleted.Id})
+	err = th.addUserToChannels(user, []string{channelBasic.Id, channelPrivate.Id, channelDeleted.Id})
+	if err != nil {
+		return err
+	}
+
+	err = th.addUserToChannels(user2, []string{channelPrivate.Id, channelDeleted.Id})
+	if err != nil {
+		return err
+	}
+
+	err = th.addUserToChannels(useranother, []string{channelAnotherTeam.Id})
 	if err != nil {
 		return err
 	}
@@ -91,6 +104,7 @@ func (th *SearchTestHelper) SetupBasicFixtures() error {
 	th.AnotherTeam = anotherTeam
 	th.User = user
 	th.User2 = user2
+	th.UserAnotherTeam = useranother
 	th.ChannelBasic = channelBasic
 	th.ChannelPrivate = channelPrivate
 	th.ChannelAnotherTeam = channelAnotherTeam

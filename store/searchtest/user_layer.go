@@ -779,11 +779,12 @@ func testSearchUsersInTeam(t *testing.T, th *SearchTestHelper) {
 		th.assertUsersMatchInAnyOrder(t, []*model.User{th.User, th.User2}, users)
 	})
 	t.Run("Should return all the team users with no team id", func(t *testing.T) {
-		users, apperr := th.Store.User().Search("", "", options)
+		users, apperr := th.Store.User().Search("", "basicusername", options)
 		require.Nil(t, apperr)
 		th.User.Sanitize(map[string]bool{})
 		th.User2.Sanitize(map[string]bool{})
-		th.assertUsersMatchInAnyOrder(t, []*model.User{th.User, th.User2}, users)
+		th.UserAnotherTeam.Sanitize(map[string]bool{})
+		th.assertUsersMatchInAnyOrder(t, []*model.User{th.User, th.User2, th.UserAnotherTeam}, users)
 	})
 	t.Run("Should return all the team users filtered by username", func(t *testing.T) {
 		users, apperr := th.Store.User().Search(th.Team.Id, "basicusername1", options)
