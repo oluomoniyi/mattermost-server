@@ -65,11 +65,6 @@ var searchUserStoreTests = []searchTest{
 		[]string{ENGINE_ALL},
 	},
 	{
-		"Should be able to autocomplete a user by part of its username splitted by whitespace",
-		testAutocompleteUserByUsernameWithWhiteSpace,
-		[]string{ENGINE_ALL},
-	},
-	{
 		"Should be able to autocomplete a user by part of its username splitted by underscore",
 		testAutocompleteUserByUsernameWithUnderscore,
 		[]string{ENGINE_ALL},
@@ -86,12 +81,17 @@ var searchUserStoreTests = []searchTest{
 	},
 	{
 		"Should escape the dash character",
-		testShouldEscapeDashCharacter,
+		testShouldEscapeUnderscoreCharacter,
 		[]string{ENGINE_ALL},
 	},
 	{
 		"Should be able to search inactive users",
 		testShouldBeAbleToSearchInactiveUsers,
+		[]string{ENGINE_ALL},
+	},
+	{
+		"Should be able to search filtering by role",
+		testShouldBeAbleToSearchFilteringByRole,
 		[]string{ENGINE_ALL},
 	},
 	{
@@ -127,6 +127,11 @@ var searchUserStoreTests = []searchTest{
 	{
 		"Should support search all users in a team",
 		testSearchUsersInTeam,
+		[]string{ENGINE_ALL},
+	},
+	{
+		"Should support search users by full name",
+		testSearchUsersByFullName,
 		[]string{ENGINE_ALL},
 	},
 	{
@@ -286,14 +291,14 @@ func testAutocompleteUserByFirstName(t *testing.T, th *SearchTestHelper) {
 		AllowFullNames: true,
 		Limit:          model.USER_SEARCH_DEFAULT_LIMIT,
 	}
-	t.Run("Should return results when the first name is unique", func(t *testing.T) {
+	t.Run("Should autocomplete users when the first name is unique", func(t *testing.T) {
 		users, apperr := th.Store.User().AutocompleteUsersInChannel(th.Team.Id, th.ChannelBasic.Id, "altfirstname", options)
 		require.Nil(t, apperr)
 		userAlternate.Sanitize(map[string]bool{})
 		th.assertUsersMatchInAnyOrder(t, []*model.User{userAlternate}, users.InChannel)
 		th.assertUsersMatchInAnyOrder(t, []*model.User{}, users.OutOfChannel)
 	})
-	t.Run("Should return results for in the channel and out of the channel with the same first name", func(t *testing.T) {
+	t.Run("Should autocomplete users for in the channel and out of the channel with the same first name", func(t *testing.T) {
 		users, apperr := th.Store.User().AutocompleteUsersInChannel(th.Team.Id, th.ChannelBasic.Id, "basicfirstname", options)
 		require.Nil(t, apperr)
 		th.User.Sanitize(map[string]bool{})
@@ -373,16 +378,14 @@ func testAutocompleteUserByEmail(t *testing.T, th *SearchTestHelper) {
 		AllowEmails: true,
 		Limit:       model.USER_SEARCH_DEFAULT_LIMIT,
 	}
-	// Should return results when the email is unique
-	t.Run("Should return results when the email is unique", func(t *testing.T) {
+	t.Run("Should autocomplete users when the email is unique", func(t *testing.T) {
 		users, apperr := th.Store.User().AutocompleteUsersInChannel(th.Team.Id, th.ChannelBasic.Id, "useralt@test.email.com", options)
 		require.Nil(t, apperr)
 		userAlternate.Sanitize(map[string]bool{})
 		th.assertUsersMatchInAnyOrder(t, []*model.User{userAlternate}, users.InChannel)
 		th.assertUsersMatchInAnyOrder(t, []*model.User{}, users.OutOfChannel)
 	})
-	// Should return users that share the same email user prefix
-	t.Run("Should return users that share the same email user prefix", func(t *testing.T) {
+	t.Run("Should autocomplete users that share the same email user prefix", func(t *testing.T) {
 		users, apperr := th.Store.User().AutocompleteUsersInChannel(th.Team.Id, th.ChannelBasic.Id, "success_", options)
 		require.Nil(t, apperr)
 		th.User.Sanitize(map[string]bool{})
@@ -390,14 +393,33 @@ func testAutocompleteUserByEmail(t *testing.T, th *SearchTestHelper) {
 		th.assertUsersMatchInAnyOrder(t, []*model.User{th.User}, users.InChannel)
 		th.assertUsersMatchInAnyOrder(t, []*model.User{th.User2}, users.OutOfChannel)
 	})
-	// Should return users that share the same domain
-	t.Run("Should return users that share the same email domain", func(t *testing.T) {
+	t.Run("Should autocomplete users that share the same email domain", func(t *testing.T) {
 		users, apperr := th.Store.User().AutocompleteUsersInChannel(th.Team.Id, th.ChannelBasic.Id, "simulator.amazon.com", options)
 		require.Nil(t, apperr)
 		th.User.Sanitize(map[string]bool{})
 		th.User2.Sanitize(map[string]bool{})
 		th.assertUsersMatchInAnyOrder(t, []*model.User{th.User}, users.InChannel)
 		th.assertUsersMatchInAnyOrder(t, []*model.User{th.User2}, users.OutOfChannel)
+	})
+	t.Run("Should search users when the email is unique", func(t *testing.T) {
+		users, apperr := th.Store.User().Search(th.Team.Id, "useralt@test.email.com", options)
+		require.Nil(t, apperr)
+		userAlternate.Sanitize(map[string]bool{})
+		th.assertUsersMatchInAnyOrder(t, []*model.User{userAlternate}, users)
+	})
+	t.Run("Should search users that share the same email user prefix", func(t *testing.T) {
+		users, apperr := th.Store.User().Search(th.Team.Id, "success_", options)
+		require.Nil(t, apperr)
+		th.User.Sanitize(map[string]bool{})
+		th.User2.Sanitize(map[string]bool{})
+		th.assertUsersMatchInAnyOrder(t, []*model.User{th.User}, users)
+	})
+	t.Run("Should search users that share the same email domain", func(t *testing.T) {
+		users, apperr := th.Store.User().Search(th.Team.Id, "simulator.amazon.com", options)
+		require.Nil(t, apperr)
+		th.User.Sanitize(map[string]bool{})
+		th.User2.Sanitize(map[string]bool{})
+		th.assertUsersMatchInAnyOrder(t, []*model.User{th.User}, users)
 	})
 }
 func testShouldNotMatchSpecificQueriesEmail(t *testing.T, th *SearchTestHelper) {
@@ -431,32 +453,6 @@ func testAutocompleteUserByUsernameWithDot(t *testing.T, th *SearchTestHelper) {
 	})
 	t.Run("Should return results when searching for part of the username including the Dot", func(t *testing.T) {
 		users, apperr := th.Store.User().AutocompleteUsersInChannel(th.Team.Id, th.ChannelBasic.Id, ".username", options)
-		require.Nil(t, apperr)
-		userAlternate.Sanitize(map[string]bool{})
-		th.assertUsersMatchInAnyOrder(t, []*model.User{userAlternate}, users.InChannel)
-		th.assertUsersMatchInAnyOrder(t, []*model.User{}, users.OutOfChannel)
-	})
-}
-func testAutocompleteUserByUsernameWithWhiteSpace(t *testing.T, th *SearchTestHelper) {
-	userAlternate, err := th.createUser("alternate username", "alternatenickname", "firstname", "altlastname")
-	require.Nil(t, err)
-	defer th.deleteUser(userAlternate)
-	err = th.addUserToTeams(userAlternate, []string{th.Team.Id})
-	require.Nil(t, err)
-	err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
-	require.Nil(t, err)
-	options := &model.UserSearchOptions{
-		Limit: model.USER_SEARCH_DEFAULT_LIMIT,
-	}
-	t.Run("Should return results when searching for the whole username with Dot", func(t *testing.T) {
-		users, apperr := th.Store.User().AutocompleteUsersInChannel(th.Team.Id, th.ChannelBasic.Id, "alternate username", options)
-		require.Nil(t, apperr)
-		userAlternate.Sanitize(map[string]bool{})
-		th.assertUsersMatchInAnyOrder(t, []*model.User{userAlternate}, users.InChannel)
-		th.assertUsersMatchInAnyOrder(t, []*model.User{}, users.OutOfChannel)
-	})
-	t.Run("Should return results when searching for part of the username including the whitespace", func(t *testing.T) {
-		users, apperr := th.Store.User().AutocompleteUsersInChannel(th.Team.Id, th.ChannelBasic.Id, " username", options)
 		require.Nil(t, apperr)
 		userAlternate.Sanitize(map[string]bool{})
 		th.assertUsersMatchInAnyOrder(t, []*model.User{userAlternate}, users.InChannel)
@@ -526,13 +522,21 @@ func testShouldEscapePercentageCharacter(t *testing.T, th *SearchTestHelper) {
 	options := &model.UserSearchOptions{
 		Limit: model.USER_SEARCH_DEFAULT_LIMIT,
 	}
-	users, apperr := th.Store.User().AutocompleteUsersInChannel(th.Team.Id, th.ChannelBasic.Id, "alternate%", options)
-	require.Nil(t, apperr)
-	userAlternate.Sanitize(map[string]bool{})
-	th.assertUsersMatchInAnyOrder(t, []*model.User{userAlternate}, users.InChannel)
-	th.assertUsersMatchInAnyOrder(t, []*model.User{}, users.OutOfChannel)
+	t.Run("Should autocomplete users escaping percentage symbol", func(t *testing.T) {
+		users, apperr := th.Store.User().AutocompleteUsersInChannel(th.Team.Id, th.ChannelBasic.Id, "alternate%", options)
+		require.Nil(t, apperr)
+		userAlternate.Sanitize(map[string]bool{})
+		th.assertUsersMatchInAnyOrder(t, []*model.User{userAlternate}, users.InChannel)
+		th.assertUsersMatchInAnyOrder(t, []*model.User{}, users.OutOfChannel)
+	})
+	t.Run("Should search users escaping percentage symbol", func(t *testing.T) {
+		users, apperr := th.Store.User().Search(th.Team.Id, "alternate%", options)
+		require.Nil(t, apperr)
+		userAlternate.Sanitize(map[string]bool{})
+		th.assertUsersMatchInAnyOrder(t, []*model.User{userAlternate}, users)
+	})
 }
-func testShouldEscapeDashCharacter(t *testing.T, th *SearchTestHelper) {
+func testShouldEscapeUnderscoreCharacter(t *testing.T, th *SearchTestHelper) {
 	userAlternate, err := th.createUser("alternate_username", "alternatenickname", "firstname", "altlastname")
 	require.Nil(t, err)
 	defer th.deleteUser(userAlternate)
@@ -543,11 +547,19 @@ func testShouldEscapeDashCharacter(t *testing.T, th *SearchTestHelper) {
 	options := &model.UserSearchOptions{
 		Limit: model.USER_SEARCH_DEFAULT_LIMIT,
 	}
-	users, apperr := th.Store.User().AutocompleteUsersInChannel(th.Team.Id, th.ChannelBasic.Id, "alternate_", options)
-	require.Nil(t, apperr)
-	userAlternate.Sanitize(map[string]bool{})
-	th.assertUsersMatchInAnyOrder(t, []*model.User{userAlternate}, users.InChannel)
-	th.assertUsersMatchInAnyOrder(t, []*model.User{}, users.OutOfChannel)
+	t.Run("Should autocomplete users escaping underscore symbol", func(t *testing.T) {
+		users, apperr := th.Store.User().AutocompleteUsersInChannel(th.Team.Id, th.ChannelBasic.Id, "alternate_", options)
+		require.Nil(t, apperr)
+		userAlternate.Sanitize(map[string]bool{})
+		th.assertUsersMatchInAnyOrder(t, []*model.User{userAlternate}, users.InChannel)
+		th.assertUsersMatchInAnyOrder(t, []*model.User{}, users.OutOfChannel)
+	})
+	t.Run("Should search users escaping underscore symbol", func(t *testing.T) {
+		users, apperr := th.Store.User().Search(th.Team.Id, "alternate_", options)
+		require.Nil(t, apperr)
+		userAlternate.Sanitize(map[string]bool{})
+		th.assertUsersMatchInAnyOrder(t, []*model.User{userAlternate}, users)
+	})
 }
 
 func testShouldBeAbleToSearchInactiveUsers(t *testing.T, th *SearchTestHelper) {
@@ -565,14 +577,20 @@ func testShouldBeAbleToSearchInactiveUsers(t *testing.T, th *SearchTestHelper) {
 		AllowInactive: true,
 		Limit:         model.USER_SEARCH_DEFAULT_LIMIT,
 	}
-	t.Run("Should return inactive users if we allow it", func(t *testing.T) {
+	t.Run("Should autocomplete inactive users if we allow it", func(t *testing.T) {
 		users, apperr := th.Store.User().AutocompleteUsersInChannel(th.Team.Id, th.ChannelBasic.Id, "alternate-username", options)
 		require.Nil(t, apperr)
 		userAlternate.Sanitize(map[string]bool{})
 		th.assertUsersMatchInAnyOrder(t, []*model.User{userAlternate}, users.InChannel)
 		th.assertUsersMatchInAnyOrder(t, []*model.User{}, users.OutOfChannel)
 	})
-	t.Run("Shouldn't return return inactive users if we don't allow it", func(t *testing.T) {
+	t.Run("Should search inactive users if we allow it", func(t *testing.T) {
+		users, apperr := th.Store.User().Search(th.Team.Id, "alternate-username", options)
+		require.Nil(t, apperr)
+		userAlternate.Sanitize(map[string]bool{})
+		th.assertUsersMatchInAnyOrder(t, []*model.User{userAlternate}, users)
+	})
+	t.Run("Shouldn't autocomplete inactive users if we don't allow it", func(t *testing.T) {
 		options.AllowInactive = false
 		users, apperr := th.Store.User().AutocompleteUsersInChannel(th.Team.Id, th.ChannelBasic.Id, "alternate-username", options)
 		require.Nil(t, apperr)
@@ -580,18 +598,65 @@ func testShouldBeAbleToSearchInactiveUsers(t *testing.T, th *SearchTestHelper) {
 		th.assertUsersMatchInAnyOrder(t, []*model.User{}, users.InChannel)
 		th.assertUsersMatchInAnyOrder(t, []*model.User{}, users.OutOfChannel)
 	})
+	t.Run("Shouldn't search inactive users if we don't allow it", func(t *testing.T) {
+		options.AllowInactive = false
+		users, apperr := th.Store.User().Search(th.Team.Id, "alternate-username", options)
+		require.Nil(t, apperr)
+		userAlternate.Sanitize(map[string]bool{})
+		th.assertUsersMatchInAnyOrder(t, []*model.User{}, users)
+	})
+}
+
+func testShouldBeAbleToSearchFilteringByRole(t *testing.T, th *SearchTestHelper) {
+	userAlternate, err := th.createUser("alternate-username", "alternatenickname", "firstname", "altlastname")
+	require.Nil(t, err)
+	userAlternate.Roles = "system_admin"
+	_, apperr := th.Store.User().Update(userAlternate, false)
+	require.Nil(t, apperr)
+	defer th.deleteUser(userAlternate)
+	err = th.addUserToTeams(userAlternate, []string{th.Team.Id})
+	require.Nil(t, err)
+	err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
+	require.Nil(t, err)
+	options := &model.UserSearchOptions{
+		AllowInactive: true,
+		Role:          "system_admin",
+		Limit:         model.USER_SEARCH_DEFAULT_LIMIT,
+	}
+	t.Run("Should autocomplete users filtering by roles", func(t *testing.T) {
+		users, apperr := th.Store.User().AutocompleteUsersInChannel(th.Team.Id, th.ChannelBasic.Id, "username", options)
+		require.Nil(t, apperr)
+		userAlternate.Sanitize(map[string]bool{})
+		th.assertUsersMatchInAnyOrder(t, []*model.User{userAlternate}, users.InChannel)
+		th.assertUsersMatchInAnyOrder(t, []*model.User{}, users.OutOfChannel)
+	})
+	t.Run("Should search users filtering by roles", func(t *testing.T) {
+		users, apperr := th.Store.User().Search(th.Team.Id, "username", options)
+		require.Nil(t, apperr)
+		userAlternate.Sanitize(map[string]bool{})
+		th.assertUsersMatchInAnyOrder(t, []*model.User{userAlternate}, users)
+	})
 }
 
 func testShouldIgnoreLeadingAtSymbols(t *testing.T, th *SearchTestHelper) {
 	options := &model.UserSearchOptions{
 		Limit: model.USER_SEARCH_DEFAULT_LIMIT,
 	}
-	users, apperr := th.Store.User().AutocompleteUsersInChannel(th.Team.Id, th.ChannelBasic.Id, "@basicusername", options)
-	require.Nil(t, apperr)
-	th.User.Sanitize(map[string]bool{})
-	th.User2.Sanitize(map[string]bool{})
-	th.assertUsersMatchInAnyOrder(t, []*model.User{th.User}, users.InChannel)
-	th.assertUsersMatchInAnyOrder(t, []*model.User{th.User2}, users.OutOfChannel)
+	t.Run("Should autocomplete ignoring the @ symbol at the beginning", func(t *testing.T) {
+		users, apperr := th.Store.User().AutocompleteUsersInChannel(th.Team.Id, th.ChannelBasic.Id, "@basicusername", options)
+		require.Nil(t, apperr)
+		th.User.Sanitize(map[string]bool{})
+		th.User2.Sanitize(map[string]bool{})
+		th.assertUsersMatchInAnyOrder(t, []*model.User{th.User}, users.InChannel)
+		th.assertUsersMatchInAnyOrder(t, []*model.User{th.User2}, users.OutOfChannel)
+	})
+	t.Run("Should search ignoring the @ symbol at the beginning", func(t *testing.T) {
+		users, apperr := th.Store.User().Search(th.Team.Id, "@basicusername", options)
+		require.Nil(t, apperr)
+		th.User.Sanitize(map[string]bool{})
+		th.User2.Sanitize(map[string]bool{})
+		th.assertUsersMatchInAnyOrder(t, []*model.User{th.User, th.User2}, users)
+	})
 }
 
 func testSearchUsersShouldBeCaseInsensitive(t *testing.T, th *SearchTestHelper) {
@@ -713,11 +778,24 @@ func testSearchUsersInTeam(t *testing.T, th *SearchTestHelper) {
 		th.User2.Sanitize(map[string]bool{})
 		th.assertUsersMatchInAnyOrder(t, []*model.User{th.User, th.User2}, users)
 	})
+	t.Run("Should return all the team users with no team id", func(t *testing.T) {
+		users, apperr := th.Store.User().Search("", "", options)
+		require.Nil(t, apperr)
+		th.User.Sanitize(map[string]bool{})
+		th.User2.Sanitize(map[string]bool{})
+		th.assertUsersMatchInAnyOrder(t, []*model.User{th.User, th.User2}, users)
+	})
 	t.Run("Should return all the team users filtered by username", func(t *testing.T) {
 		users, apperr := th.Store.User().Search(th.Team.Id, "basicusername1", options)
 		require.Nil(t, apperr)
 		th.User.Sanitize(map[string]bool{})
 		th.assertUsersMatchInAnyOrder(t, []*model.User{th.User}, users)
+	})
+	t.Run("Should not return spurious results", func(t *testing.T) {
+		users, apperr := th.Store.User().Search(th.Team.Id, "falseuser", options)
+		require.Nil(t, apperr)
+		th.User.Sanitize(map[string]bool{})
+		th.assertUsersMatchInAnyOrder(t, []*model.User{}, users)
 	})
 	t.Run("Should return all the team users filtered by username and with channel restrictions", func(t *testing.T) {
 		options.ViewRestrictions = &model.ViewUsersRestrictions{Channels: []string{th.ChannelBasic.Id}}
@@ -786,4 +864,30 @@ func testSearchUsersInTeamUsernameWithUnderscore(t *testing.T, th *SearchTestHel
 	require.Nil(t, apperr)
 	userAlternate.Sanitize(map[string]bool{})
 	th.assertUsersMatchInAnyOrder(t, []*model.User{userAlternate}, users)
+}
+
+func testSearchUsersByFullName(t *testing.T, th *SearchTestHelper) {
+	options := &model.UserSearchOptions{
+		AllowFullNames: true,
+		Limit:          model.USER_SEARCH_DEFAULT_LIMIT,
+	}
+	t.Run("Should search users by full name", func(t *testing.T) {
+		users, apperr := th.Store.User().Search(th.Team.Id, "basicfirstname", options)
+		require.Nil(t, apperr)
+		th.User.Sanitize(map[string]bool{})
+		th.User2.Sanitize(map[string]bool{})
+		th.assertUsersMatchInAnyOrder(t, []*model.User{th.User, th.User2}, users)
+	})
+	t.Run("Should search user by full name", func(t *testing.T) {
+		users, apperr := th.Store.User().Search(th.Team.Id, "basicfirstname1", options)
+		require.Nil(t, apperr)
+		th.User.Sanitize(map[string]bool{})
+		th.assertUsersMatchInAnyOrder(t, []*model.User{th.User}, users)
+	})
+	t.Run("Should return empty when search by full name and is deactivated", func(t *testing.T) {
+		options.AllowFullNames = false
+		users, apperr := th.Store.User().Search(th.Team.Id, "basicfirstname1", options)
+		require.Nil(t, apperr)
+		th.assertUsersMatchInAnyOrder(t, []*model.User{}, users)
+	})
 }
