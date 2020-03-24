@@ -85,17 +85,17 @@ func (th *SearchTestHelper) SetupBasicFixtures() error {
 		return err
 	}
 
-	err = th.addUserToChannels(user, []string{channelBasic.Id, channelPrivate.Id, channelDeleted.Id})
+	_, err = th.addUserToChannels(user, []string{channelBasic.Id, channelPrivate.Id, channelDeleted.Id})
 	if err != nil {
 		return err
 	}
 
-	err = th.addUserToChannels(user2, []string{channelPrivate.Id, channelDeleted.Id})
+	_, err = th.addUserToChannels(user2, []string{channelPrivate.Id, channelDeleted.Id})
 	if err != nil {
 		return err
 	}
 
-	err = th.addUserToChannels(useranother, []string{channelAnotherTeam.Id})
+	_, err = th.addUserToChannels(useranother, []string{channelAnotherTeam.Id})
 	if err != nil {
 		return err
 	}
@@ -232,6 +232,31 @@ func (th *SearchTestHelper) createChannel(teamID, name, displayName, purpose, ch
 	return channel, nil
 }
 
+func (th *SearchTestHelper) createDirectChannel(teamID, name, displayName string, users []*model.User) (*model.Channel, error) {
+	channel := &model.Channel{
+		TeamId:      teamID,
+		Name:        name,
+		DisplayName: displayName,
+		Type:        model.CHANNEL_DIRECT,
+	}
+
+	m1 := &model.ChannelMember{}
+	m1.ChannelId = channel.Id
+	m1.UserId = users[0].Id
+	m1.NotifyProps = model.GetDefaultChannelNotifyProps()
+
+	m2 := &model.ChannelMember{}
+	m2.ChannelId = channel.Id
+	m2.UserId = users[0].Id
+	m2.NotifyProps = model.GetDefaultChannelNotifyProps()
+
+	channel, err := th.Store.Channel().SaveDirectChannel(channel, m1, m2)
+	if err != nil {
+		return nil, err
+	}
+	return channel, nil
+}
+
 func (th *SearchTestHelper) deleteChannel(channel *model.Channel) error {
 	appError := th.Store.Channel().PermanentDeleteMembersByChannel(channel.Id)
 	if appError != nil {
@@ -288,6 +313,14 @@ func (th *SearchTestHelper) createPost(userID, channelID, message, hashtags stri
 	return post, nil
 }
 
+func (th *SearchTestHelper) deleteUserPosts(userId string) error {
+	err := th.Store.Post().PermanentDeleteByUser(userId)
+	if err != nil {
+		return errors.New(err.Error())
+	}
+	return nil
+}
+
 func (th *SearchTestHelper) addUserToTeams(user *model.User, teamIds []string) error {
 	for _, teamId := range teamIds {
 		_, err := th.Store.Team().SaveMember(&model.TeamMember{TeamId: teamId, UserId: user.Id}, -1)
@@ -299,20 +332,22 @@ func (th *SearchTestHelper) addUserToTeams(user *model.User, teamIds []string) e
 	return nil
 }
 
-func (th *SearchTestHelper) addUserToChannels(user *model.User, channelIds []string) error {
+func (th *SearchTestHelper) addUserToChannels(user *model.User, channelIds []string) ([]*model.ChannelMember, error) {
 
+	channelMembers := make([]*model.ChannelMember, len(channelIds))
 	for _, channelId := range channelIds {
-		_, err := th.Store.Channel().SaveMember(&model.ChannelMember{
+		cm, err := th.Store.Channel().SaveMember(&model.ChannelMember{
 			ChannelId:   channelId,
 			UserId:      user.Id,
 			NotifyProps: model.GetDefaultChannelNotifyProps(),
 		})
 		if err != nil {
-			return errors.New(err.Error())
+			return nil, errors.New(err.Error())
 		}
+		channelMembers = append(channelMembers, cm)
 	}
 
-	return nil
+	return channelMembers, nil
 }
 
 func (th *SearchTestHelper) assertUsers(t *testing.T, expected, actual []*model.User) {
@@ -347,9 +382,13 @@ func (th *SearchTestHelper) assertUsersMatchInAnyOrder(t *testing.T, expected, a
 	}
 }
 
-func (th *SearchTestHelper) checkPostInSearchResults(t *testing.T, postId string, searchResults []string) {
+func (th *SearchTestHelper) checkPostInSearchResults(t *testing.T, postId string, searchResults map[string]*model.Post) {
 	t.Helper()
-	assert.Contains(t, searchResults, postId, "Did not find expected post in search results.")
+	postIds := make([]string, len(searchResults))
+	for id, _ := range searchResults {
+		postIds = append(postIds, id)
+	}
+	assert.Contains(t, postIds, postId, "Did not find expected post in search results.")
 }
 
 func (th *SearchTestHelper) checkPostNotInSearchResults(t *testing.T, postId string, searchResults []string) {

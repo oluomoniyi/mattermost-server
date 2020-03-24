@@ -179,7 +179,7 @@ func testHonorChannelRestrictionsAutocompletingUsers(t *testing.T, th *SearchTes
 	defer th.deleteUser(userAlternate)
 	err = th.addUserToTeams(userAlternate, []string{th.Team.Id})
 	require.Nil(t, err)
-	err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
+	_, err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
 	require.Nil(t, err)
 	options := &model.UserSearchOptions{
 		AllowFullNames:   true,
@@ -215,7 +215,7 @@ func testHonorTeamRestrictionsAutocompletingUsers(t *testing.T, th *SearchTestHe
 	require.Nil(t, err)
 	err = th.addUserToTeams(userAlternate, []string{th.AnotherTeam.Id})
 	require.Nil(t, err)
-	err = th.addUserToChannels(userAlternate, []string{th.ChannelAnotherTeam.Id})
+	_, err = th.addUserToChannels(userAlternate, []string{th.ChannelAnotherTeam.Id})
 	require.Nil(t, err)
 	options := &model.UserSearchOptions{
 		AllowFullNames:   true,
@@ -266,7 +266,7 @@ func testAutocompleteUserByUsername(t *testing.T, th *SearchTestHelper) {
 	defer th.deleteUser(userAlternate)
 	err = th.addUserToTeams(userAlternate, []string{th.Team.Id})
 	require.Nil(t, err)
-	err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
+	_, err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
 	require.Nil(t, err)
 	options := &model.UserSearchOptions{
 		AllowFullNames: false,
@@ -285,7 +285,7 @@ func testAutocompleteUserByFirstName(t *testing.T, th *SearchTestHelper) {
 	defer th.deleteUser(userAlternate)
 	err = th.addUserToTeams(userAlternate, []string{th.Team.Id})
 	require.Nil(t, err)
-	err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
+	_, err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
 	require.Nil(t, err)
 	options := &model.UserSearchOptions{
 		AllowFullNames: true,
@@ -313,7 +313,7 @@ func testAutocompleteUserByLastName(t *testing.T, th *SearchTestHelper) {
 	defer th.deleteUser(userAlternate)
 	err = th.addUserToTeams(userAlternate, []string{th.Team.Id})
 	require.Nil(t, err)
-	err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
+	_, err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
 	require.Nil(t, err)
 	options := &model.UserSearchOptions{
 		AllowFullNames: true,
@@ -341,7 +341,7 @@ func testAutocompleteUserByNickName(t *testing.T, th *SearchTestHelper) {
 	defer th.deleteUser(userAlternate)
 	err = th.addUserToTeams(userAlternate, []string{th.Team.Id})
 	require.Nil(t, err)
-	err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
+	_, err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
 	require.Nil(t, err)
 	options := &model.UserSearchOptions{
 		AllowFullNames: true,
@@ -372,7 +372,7 @@ func testAutocompleteUserByEmail(t *testing.T, th *SearchTestHelper) {
 	defer th.deleteUser(userAlternate)
 	err = th.addUserToTeams(userAlternate, []string{th.Team.Id})
 	require.Nil(t, err)
-	err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
+	_, err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
 	require.Nil(t, err)
 	options := &model.UserSearchOptions{
 		AllowEmails: true,
@@ -438,7 +438,7 @@ func testAutocompleteUserByUsernameWithDot(t *testing.T, th *SearchTestHelper) {
 	defer th.deleteUser(userAlternate)
 	err = th.addUserToTeams(userAlternate, []string{th.Team.Id})
 	require.Nil(t, err)
-	err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
+	_, err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
 	require.Nil(t, err)
 	options := &model.UserSearchOptions{
 		Limit: model.USER_SEARCH_DEFAULT_LIMIT,
@@ -465,7 +465,7 @@ func testAutocompleteUserByUsernameWithUnderscore(t *testing.T, th *SearchTestHe
 	defer th.deleteUser(userAlternate)
 	err = th.addUserToTeams(userAlternate, []string{th.Team.Id})
 	require.Nil(t, err)
-	err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
+	_, err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
 	require.Nil(t, err)
 	options := &model.UserSearchOptions{
 		Limit: model.USER_SEARCH_DEFAULT_LIMIT,
@@ -491,7 +491,7 @@ func testAutocompleteUserByUsernameWithHyphen(t *testing.T, th *SearchTestHelper
 	defer th.deleteUser(userAlternate)
 	err = th.addUserToTeams(userAlternate, []string{th.Team.Id})
 	require.Nil(t, err)
-	err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
+	_, err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
 	require.Nil(t, err)
 	options := &model.UserSearchOptions{
 		Limit: model.USER_SEARCH_DEFAULT_LIMIT,
@@ -517,7 +517,7 @@ func testShouldEscapePercentageCharacter(t *testing.T, th *SearchTestHelper) {
 	defer th.deleteUser(userAlternate)
 	err = th.addUserToTeams(userAlternate, []string{th.Team.Id})
 	require.Nil(t, err)
-	err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
+	_, err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
 	require.Nil(t, err)
 	options := &model.UserSearchOptions{
 		Limit: model.USER_SEARCH_DEFAULT_LIMIT,
@@ -542,7 +542,7 @@ func testShouldEscapeUnderscoreCharacter(t *testing.T, th *SearchTestHelper) {
 	defer th.deleteUser(userAlternate)
 	err = th.addUserToTeams(userAlternate, []string{th.Team.Id})
 	require.Nil(t, err)
-	err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
+	_, err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
 	require.Nil(t, err)
 	options := &model.UserSearchOptions{
 		Limit: model.USER_SEARCH_DEFAULT_LIMIT,
@@ -571,7 +571,7 @@ func testShouldBeAbleToSearchInactiveUsers(t *testing.T, th *SearchTestHelper) {
 	defer th.deleteUser(userAlternate)
 	err = th.addUserToTeams(userAlternate, []string{th.Team.Id})
 	require.Nil(t, err)
-	err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
+	_, err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
 	require.Nil(t, err)
 	options := &model.UserSearchOptions{
 		AllowInactive: true,
@@ -616,7 +616,7 @@ func testShouldBeAbleToSearchFilteringByRole(t *testing.T, th *SearchTestHelper)
 	defer th.deleteUser(userAlternate)
 	err = th.addUserToTeams(userAlternate, []string{th.Team.Id})
 	require.Nil(t, err)
-	err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
+	_, err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
 	require.Nil(t, err)
 	options := &model.UserSearchOptions{
 		AllowInactive: true,
@@ -680,7 +680,7 @@ func testSearchOneTwoCharUsersnameAndFirstLastNames(t *testing.T, th *SearchTest
 	defer th.deleteUser(userAlternate)
 	err = th.addUserToTeams(userAlternate, []string{th.Team.Id})
 	require.Nil(t, err)
-	err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
+	_, err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
 	require.Nil(t, err)
 	options := &model.UserSearchOptions{
 		AllowFullNames: true,
@@ -715,7 +715,7 @@ func testShouldSupportKoreanCharacters(t *testing.T, th *SearchTestHelper) {
 	defer th.deleteUser(userAlternate)
 	err = th.addUserToTeams(userAlternate, []string{th.Team.Id})
 	require.Nil(t, err)
-	err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
+	_, err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
 	require.Nil(t, err)
 	options := &model.UserSearchOptions{
 		AllowFullNames: true,
@@ -754,7 +754,7 @@ func testSearchWithHyphenAtTheEndOfTheTerm(t *testing.T, th *SearchTestHelper) {
 	defer th.deleteUser(userAlternate)
 	err = th.addUserToTeams(userAlternate, []string{th.Team.Id})
 	require.Nil(t, err)
-	err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
+	_, err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
 	require.Nil(t, err)
 	options := &model.UserSearchOptions{
 		AllowFullNames: true,
@@ -819,7 +819,7 @@ func testSearchUsersInTeamUsernameWithDot(t *testing.T, th *SearchTestHelper) {
 	defer th.deleteUser(userAlternate)
 	err = th.addUserToTeams(userAlternate, []string{th.Team.Id})
 	require.Nil(t, err)
-	err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
+	_, err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
 	require.Nil(t, err)
 	options := &model.UserSearchOptions{
 		AllowFullNames: true,
@@ -837,7 +837,7 @@ func testSearchUsersInTeamUsernameWithHyphen(t *testing.T, th *SearchTestHelper)
 	defer th.deleteUser(userAlternate)
 	err = th.addUserToTeams(userAlternate, []string{th.Team.Id})
 	require.Nil(t, err)
-	err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
+	_, err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
 	require.Nil(t, err)
 	options := &model.UserSearchOptions{
 		AllowFullNames: true,
@@ -855,7 +855,7 @@ func testSearchUsersInTeamUsernameWithUnderscore(t *testing.T, th *SearchTestHel
 	defer th.deleteUser(userAlternate)
 	err = th.addUserToTeams(userAlternate, []string{th.Team.Id})
 	require.Nil(t, err)
-	err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
+	_, err = th.addUserToChannels(userAlternate, []string{th.ChannelBasic.Id})
 	require.Nil(t, err)
 	options := &model.UserSearchOptions{
 		AllowFullNames: true,
