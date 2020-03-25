@@ -257,6 +257,35 @@ func (th *SearchTestHelper) createDirectChannel(teamID, name, displayName string
 	return channel, nil
 }
 
+func (th *SearchTestHelper) createGroupChannel(teamID, displayName string, users []*model.User) (*model.Channel, error) {
+	userIDS := make([]string, len(users))
+	for _, user := range users {
+		userIDS = append(userIDS, user.Id)
+	}
+
+	group := &model.Channel{
+		TeamId:      teamID,
+		Name:        model.GetGroupNameFromUserIds(userIDS),
+		DisplayName: displayName,
+		Type:        model.CHANNEL_GROUP,
+	}
+
+	channel, apperr := th.Store.Channel().Save(group, 10000)
+	if apperr != nil {
+		return nil, errors.New(apperr.Error())
+	}
+
+	for _, user := range users {
+		_, err := th.addUserToChannels(user, []string{channel.Id})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return channel, nil
+
+}
+
 func (th *SearchTestHelper) deleteChannel(channel *model.Channel) error {
 	appError := th.Store.Channel().PermanentDeleteMembersByChannel(channel.Id)
 	if appError != nil {
@@ -293,7 +322,7 @@ func (th *SearchTestHelper) deleteChannels(channels []*model.Channel) error {
 	return nil
 }
 
-func (th *SearchTestHelper) createPost(userID, channelID, message, hashtags string, createAt int64) (*model.Post, error) {
+func (th *SearchTestHelper) createPost(userID, channelID, message, hashtags string, createAt int64, pinned bool) (*model.Post, error) {
 	var creationTime int64 = 1000000
 	if createAt > 0 {
 		creationTime = createAt
@@ -304,6 +333,7 @@ func (th *SearchTestHelper) createPost(userID, channelID, message, hashtags stri
 		PendingPostId: model.NewId() + ":" + fmt.Sprint(model.GetMillis()),
 		UserId:        userID,
 		Hashtags:      hashtags,
+		IsPinned:      pinned,
 		CreateAt:      creationTime,
 	})
 	if appError != nil {
